@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:;">
     <title>Calendario Campagne Social</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -251,15 +252,15 @@
     </div>
 
     <script>
+    // Utility functions - Mettiamo questa per prima così è disponibile ovunque
+    function showError(message) {
+        alert(message);
+    }
+
     // Variabili globali
     let campaigns = [];
     let currentDate = new Date();
     const GIST_ID = '19150d88db1d0dc544346730204d27a5';
-
-    // Utility functions
-    function showError(message) {
-        alert(message);
-    }
 
     // Configurazione axios per GitHub
     const github = axios.create({
@@ -269,7 +270,7 @@
         }
     });
 
-    // Funzioni di base
+    // Gestione token
     function getGitHubToken() {
         const savedToken = localStorage.getItem('github_token');
         if (!savedToken) {
@@ -321,6 +322,27 @@
         }
     }
 
+    // Inizializzazione
+    async function initCalendar() {
+        try {
+            const data = await loadCampaigns();
+            campaigns = data.campaigns || [];
+            renderCalendar();
+            renderCampaigns();
+        } catch (error) {
+            console.error('Errore nel caricamento:', error);
+            showError('Errore nel caricamento dei dati. Riprova più tardi.');
+        }
+    }
+
+    // Event Listeners
+    window.addEventListener('DOMContentLoaded', () => {
+        initCalendar();
+        initTabs();
+    });
+
+    // Le funzioni renderCalendar, renderCampaigns e altre funzioni UI rimangono uguali
+    
     // Funzioni di gestione campagne
     async function saveCampaign(event) {
         event.preventDefault();
@@ -352,26 +374,39 @@
         }
     }
 
-    // Inizializzazione
-    async function initCalendar() {
+    // Funzione per la condivisione
+    async function shareCalendar() {
         try {
-            const data = await loadCampaigns();
-            campaigns = data.campaigns || [];
-            renderCalendar();
-            renderCampaigns();
+            const token = getGitHubToken();
+            const shareData = {
+                campaigns,
+                currentMonth: {
+                    year: currentDate.getFullYear(),
+                    month: currentDate.getMonth()
+                },
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+            };
+
+            const response = await github.post('/gists', {
+                files: {
+                    'shared_calendar.json': {
+                        content: JSON.stringify(shareData)
+                    }
+                },
+                description: 'Calendario Campagne Social - Condivisione',
+                public: true
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const shareUrl = `${window.location.href.replace('index.html', '')}share.html?id=${response.data.id}`;
+            await navigator.clipboard.writeText(shareUrl);
+            alert('Link di condivisione copiato negli appunti!\n\nIl link scadrà tra 7 giorni.');
         } catch (error) {
-            console.error('Errore nel caricamento:', error);
-            showError('Errore nel caricamento dei dati. Riprova più tardi.');
+            console.error('Errore nella condivisione:', error);
+            showError('Errore nella creazione del link. Riprova più tardi.');
         }
     }
-
-    // Event Listeners
-    window.addEventListener('DOMContentLoaded', () => {
-        initCalendar();
-        initTabs();
-    });
-
-    // Le funzioni renderCalendar e renderCampaigns rimangono uguali
     </script>
 </body>
 </html>
