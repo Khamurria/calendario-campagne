@@ -151,7 +151,8 @@
         <div class="flex items-center mb-6 bg-white">
             <img src="img/regione-lombardia.jpg" 
                  alt="Logo Regione Lombardia" 
-                 class="h-12 w-auto object-contain mr-4">
+                 class="h-12 w-auto object-contain mr-4"
+                 onerror="this.style.display='none'">
             <div class="border-l border-gray-300 h-8 mx-4"></div>
             <h1 class="text-3xl font-bold text-gray-800">Calendario Campagne Social</h1>
         </div>
@@ -262,6 +263,62 @@
     let currentDate = new Date();
     const GIST_ID = '19150d88db1d0dc544346730204d27a5';
 
+    // Funzioni di rendering
+    function renderCalendar() {
+        const calendar = document.getElementById('calendar');
+        calendar.innerHTML = '';
+        
+        // Intestazioni giorni
+        const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+        days.forEach(day => {
+            const header = document.createElement('div');
+            header.className = 'day-header';
+            header.textContent = day;
+            calendar.appendChild(header);
+        });
+        
+        // ... resto della funzione renderCalendar ...
+    }
+
+    function renderCampaigns() {
+        const list = document.getElementById('campaignsList');
+        list.innerHTML = '';
+        
+        campaigns.forEach(campaign => {
+            const row = document.createElement('tr');
+            row.className = 'bg-white';
+            
+            // ... resto della funzione renderCampaigns ...
+        });
+    }
+
+    // Funzione per gestire i tab
+    function initTabs() {
+        const defaultTab = document.querySelector('[data-tab="calendar"]');
+        if (defaultTab) {
+            defaultTab.classList.remove('bg-gray-500');
+            defaultTab.classList.add('bg-[#006B4F]');
+        }
+        
+        document.querySelectorAll('[data-tab]').forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+                
+                // Aggiorna stile pulsanti
+                document.querySelectorAll('[data-tab]').forEach(btn => {
+                    btn.classList.remove('bg-[#006B4F]');
+                    btn.classList.add('bg-gray-500');
+                });
+                button.classList.remove('bg-gray-500');
+                button.classList.add('bg-[#006B4F]');
+                
+                // Mostra/nascondi contenuto
+                document.getElementById('campaignsTab').classList.toggle('hidden', tabId !== 'campaigns');
+                document.getElementById('calendarTab').classList.toggle('hidden', tabId !== 'calendar');
+            });
+        });
+    }
+
     // Configurazione axios per GitHub
     const github = axios.create({
         baseURL: 'https://api.github.com',
@@ -338,6 +395,7 @@
     // Event Listeners
     window.addEventListener('DOMContentLoaded', () => {
         initCalendar();
+        initTabs();
     });
 
     // Le funzioni renderCalendar, renderCampaigns e altre funzioni UI rimangono uguali
