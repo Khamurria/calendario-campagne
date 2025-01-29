@@ -77,6 +77,14 @@
                 <h1 class="text-3xl font-bold text-gray-800">Calendario Campagne Social</h1>
             </div>
             <div class="space-x-2 no-print">
+                <button onclick="prevMonth()" 
+                        class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                    <i class="fas fa-chevron-left mr-2"></i>Mese Precedente
+                </button>
+                <button onclick="nextMonth()" 
+                        class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                    Mese Successivo<i class="fas fa-chevron-right ml-2"></i>
+                </button>
                 <button onclick="window.print()" 
                         class="px-4 py-2 bg-[#006B4F] text-white rounded-lg hover:bg-[#005940] transition-colors">
                     <i class="fas fa-print mr-2"></i>Stampa
@@ -328,6 +336,111 @@
 
         // Avvio
         window.addEventListener('DOMContentLoaded', loadSharedData);
+
+        // Funzioni di navigazione calendario
+        async function prevMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            // Aggiorna il mese nel server
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const gistId = urlParams.get('id');
+                const token = getGitHubToken();
+                
+                if (gistId && token) {
+                    const response = await github.get(`/gists/${gistId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    const shareData = JSON.parse(response.data.files['shared_calendar.json'].content);
+                    shareData.currentMonth = {
+                        year: currentDate.getFullYear(),
+                        month: currentDate.getMonth()
+                    };
+                    
+                    await github.patch(`/gists/${gistId}`, {
+                        files: {
+                            'shared_calendar.json': {
+                                content: JSON.stringify(shareData)
+                            }
+                        }
+                    }, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                }
+            } catch (error) {
+                console.error('Errore nell\'aggiornamento del mese:', error);
+            }
+            renderCalendar();
+        }
+
+        async function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            // Aggiorna il mese nel server
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const gistId = urlParams.get('id');
+                const token = getGitHubToken();
+                
+                if (gistId && token) {
+                    const response = await github.get(`/gists/${gistId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    const shareData = JSON.parse(response.data.files['shared_calendar.json'].content);
+                    shareData.currentMonth = {
+                        year: currentDate.getFullYear(),
+                        month: currentDate.getMonth()
+                    };
+                    
+                    await github.patch(`/gists/${gistId}`, {
+                        files: {
+                            'shared_calendar.json': {
+                                content: JSON.stringify(shareData)
+                            }
+                        }
+                    }, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                }
+            } catch (error) {
+                console.error('Errore nell\'aggiornamento del mese:', error);
+            }
+            renderCalendar();
+        }
+
+        // Funzione helper per aggiornare il mese
+        async function updateSharedMonth() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const gistId = urlParams.get('id');
+                const token = getGitHubToken();
+                
+                if (gistId && token) {
+                    const response = await github.get(`/gists/${gistId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    const shareData = JSON.parse(response.data.files['shared_calendar.json'].content);
+                    shareData.currentMonth = {
+                        year: currentDate.getFullYear(),
+                        month: currentDate.getMonth()
+                    };
+                    
+                    await github.patch(`/gists/${gistId}`, {
+                        files: {
+                            'shared_calendar.json': {
+                                content: JSON.stringify(shareData)
+                            }
+                        }
+                    }, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                }
+            } catch (error) {
+                console.error('Errore nell\'aggiornamento del mese:', error);
+                showError('Errore nell\'aggiornamento del mese');
+            }
+        }
     </script>
 </body>
 </html> 
