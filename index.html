@@ -254,19 +254,41 @@
     </div>
 
     <script>
-    // Utility functions - DEVE essere definita prima di tutto
-    function showError(message) {
-        alert(message);
-    }
-
     // Variabili globali
     let campaigns = [];
     let currentDate = new Date();
     const GIST_ID = '19150d88db1d0dc544346730204d27a5';
 
-    // Funzioni di rendering - DEVONO essere definite prima di initCalendar
+    // Configurazione axios
+    const github = axios.create({
+        baseURL: 'https://api.github.com',
+        headers: {
+            'Accept': 'application/vnd.github.v3+json'
+        }
+    });
+
+    // Funzioni base
+    function showError(message) {
+        alert(message);
+    }
+
+    function getGitHubToken() {
+        const savedToken = localStorage.getItem('github_token');
+        if (!savedToken) {
+            const token = prompt('Inserisci il tuo GitHub token:');
+            if (token) {
+                localStorage.setItem('github_token', token);
+                return token;
+            }
+        }
+        return savedToken;
+    }
+
+    // Funzioni di rendering
     function renderCalendar() {
         const calendar = document.getElementById('calendar');
+        if (!calendar) return;
+        
         calendar.innerHTML = '';
         
         // Intestazioni giorni
@@ -326,11 +348,16 @@
 
         // Aggiorna titolo mese
         const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
-        document.getElementById('currentMonth').textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+        const monthTitle = document.getElementById('currentMonth');
+        if (monthTitle) {
+            monthTitle.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+        }
     }
 
     function renderCampaigns() {
         const list = document.getElementById('campaignsList');
+        if (!list) return;
+        
         list.innerHTML = '';
         
         campaigns.forEach(campaign => {
@@ -378,51 +405,18 @@
         });
     }
 
-    // Funzione per gestire i tab
-    function initTabs() {
-        const tabs = document.querySelectorAll('[data-tab]');
-        if (!tabs.length) return; // Se non ci sono tab, non fare nulla
-        
-        const defaultTab = document.querySelector('[data-tab="calendar"]');
-        if (defaultTab) {
-            defaultTab.classList.remove('bg-gray-500');
-            defaultTab.classList.add('bg-[#006B4F]');
-        }
-        
-        tabs.forEach(button => {
-            button.addEventListener('click', () => {
-                const tabId = button.getAttribute('data-tab');
-                
-                // Aggiorna stile pulsanti
-                tabs.forEach(btn => {
-                    btn.classList.remove('bg-[#006B4F]');
-                    btn.classList.add('bg-gray-500');
-                });
-                button.classList.remove('bg-gray-500');
-                button.classList.add('bg-[#006B4F]');
-                
-                // Mostra/nascondi contenuto
-                document.getElementById('campaignsTab')?.classList.toggle('hidden', tabId !== 'campaigns');
-                document.getElementById('calendarTab')?.classList.toggle('hidden', tabId !== 'calendar');
-            });
-        });
-    }
-
-    // Configurazione axios per GitHub
-    const github = axios.create({
-        baseURL: 'https://api.github.com',
-        headers: {
-            'Accept': 'application/vnd.github.v3+json'
-        }
-    });
-
     // Funzioni GitHub
     async function loadCampaigns() {
         try {
             const token = getGitHubToken();
+            if (!token) {
+                throw new Error('Token GitHub non valido');
+            }
+
             const response = await github.get(`/gists/${GIST_ID}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+
             const fileContent = response.data.files['shared_calendar.json']?.content;
             if (!fileContent) {
                 return { campaigns: [] };
@@ -435,103 +429,21 @@
         }
     }
 
-    // Gestione token
-    function getGitHubToken() {
-        const savedToken = localStorage.getItem('github_token');
-        if (!savedToken) {
-            const token = prompt('Inserisci il tuo GitHub token:');
-            if (token) {
-                localStorage.setItem('github_token', token);
-                return token;
-            }
-            return '';
-        }
-        return savedToken;
-    }
-
     // Inizializzazione
-    async function initCalendar() {
+    async function init() {
         try {
             const data = await loadCampaigns();
             campaigns = data.campaigns || [];
             renderCalendar();
             renderCampaigns();
         } catch (error) {
-            console.error('Errore nel caricamento:', error);
-            showError('Errore nel caricamento dei dati. Riprova più tardi.');
+            console.error('Errore inizializzazione:', error);
+            showError('Errore nel caricamento dei dati');
         }
     }
 
-    // Event Listeners
-    window.addEventListener('DOMContentLoaded', () => {
-        initCalendar();
-        initTabs();
-    });
-
-    // Funzioni di gestione campagne
-    async function saveCampaign(event) {
-        event.preventDefault();
-        const form = event.target;
-        
-        try {
-            const campaign = {
-                id: Date.now(),
-                title: form.title.value,
-                startDate: form.startDate.value,
-                endDate: form.endDate.value,
-                type: form.type.value,
-                channel: form.channel.value,
-                isDark: form.isDark.checked,
-                link: form.link.value
-            };
-
-            campaigns.push(campaign);
-            await saveCampaigns({ campaigns });
-            
-            renderCalendar();
-            renderCampaigns();
-            
-            form.reset();
-            document.getElementById('campaignForm').classList.add('hidden');
-        } catch (error) {
-            console.error('Errore nel salvataggio:', error);
-            showError('Errore nel salvataggio. Riprova più tardi.');
-        }
-    }
-
-    // Funzione per la condivisione
-    async function shareCalendar() {
-        try {
-            const token = getGitHubToken();
-            const shareData = {
-                campaigns,
-                currentMonth: {
-                    year: currentDate.getFullYear(),
-                    month: currentDate.getMonth()
-                },
-                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-            };
-
-            const response = await github.post('/gists', {
-                files: {
-                    'shared_calendar.json': {
-                        content: JSON.stringify(shareData)
-                    }
-                },
-                description: 'Calendario Campagne Social - Condivisione',
-                public: true
-            }, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            const shareUrl = `${window.location.href.replace('index.html', '')}share.html?id=${response.data.id}`;
-            await navigator.clipboard.writeText(shareUrl);
-            alert('Link di condivisione copiato negli appunti!\n\nIl link scadrà tra 7 giorni.');
-        } catch (error) {
-            console.error('Errore nella condivisione:', error);
-            showError('Errore nella creazione del link. Riprova più tardi.');
-        }
-    }
+    // Avvio
+    window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
