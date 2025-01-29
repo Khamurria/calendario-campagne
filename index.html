@@ -274,11 +274,111 @@
         }
     });
 
-    // Funzioni base
+    // Funzioni UI
     function showError(message) {
         alert(message);
     }
 
+    function showForm() {
+        document.getElementById('campaignForm').classList.remove('hidden');
+    }
+
+    // Funzioni di gestione campagne
+    async function saveCampaign(event) {
+        event.preventDefault();
+        try {
+            const form = event.target;
+            const newCampaign = {
+                title: form.title.value,
+                link: form.link.value,
+                startDate: form.startDate.value,
+                endDate: form.endDate.value,
+                type: form.type.value,
+                channel: form.channel.value,
+                isDark: form.isDark.checked
+            };
+
+            campaigns.push(newCampaign);
+            await saveCampaigns({ campaigns });
+            
+            form.reset();
+            document.getElementById('campaignForm').classList.add('hidden');
+            renderCalendar();
+            renderCampaigns();
+        } catch (error) {
+            console.error('Errore nel salvataggio:', error);
+            showError('Errore nel salvataggio della campagna');
+        }
+    }
+
+    async function shareCalendar() {
+        try {
+            const token = getGitHubToken();
+            if (!token) {
+                throw new Error('Token GitHub non valido');
+            }
+
+            const shareData = {
+                campaigns,
+                currentMonth: {
+                    year: currentDate.getFullYear(),
+                    month: currentDate.getMonth()
+                },
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+            };
+
+            const response = await github.post('/gists', {
+                files: {
+                    'shared_calendar.json': {
+                        content: JSON.stringify(shareData)
+                    }
+                },
+                description: 'Calendario Campagne Social - Condivisione',
+                public: true
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const shareUrl = `${window.location.href.replace('index.html', '')}share.html?id=${response.data.id}`;
+            await navigator.clipboard.writeText(shareUrl);
+            alert('Link di condivisione copiato negli appunti!\n\nIl link scadrà tra 7 giorni.');
+        } catch (error) {
+            console.error('Errore nella condivisione:', error);
+            showError('Errore nella creazione del link di condivisione');
+        }
+    }
+
+    // Funzioni GitHub
+    function getGitHubToken() {
+        const savedToken = localStorage.getItem('github_token');
+        if (!savedToken) {
+            const token = prompt('Inserisci il tuo GitHub token:');
+            if (token) {
+                localStorage.setItem('github_token', token);
+                return token;
+            }
+        }
+        return savedToken;
+    }
+
+    async function saveCampaigns(data) {
+        const token = getGitHubToken();
+        if (!token) {
+            throw new Error('Token GitHub non valido');
+        }
+
+        await github.patch(`/gists/${GIST_ID}`, {
+            files: {
+                'shared_calendar.json': {
+                    content: JSON.stringify(data)
+                }
+            }
+        }, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+    }
+
+    // Funzioni base
     function getGitHubToken() {
         const savedToken = localStorage.getItem('github_token');
         if (!savedToken) {
@@ -412,30 +512,6 @@
         });
     }
 
-    // Funzioni GitHub
-    async function loadCampaigns() {
-        try {
-            const token = getGitHubToken();
-            if (!token) {
-                throw new Error('Token GitHub non valido');
-            }
-
-            const response = await github.get(`/gists/${GIST_ID}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            const fileContent = response.data.files['shared_calendar.json']?.content;
-            if (!fileContent) {
-                return { campaigns: [] };
-            }
-            return JSON.parse(fileContent);
-        } catch (error) {
-            console.error('Errore nel caricamento:', error);
-            showError('Errore nel caricamento dei dati');
-            return { campaigns: [] };
-        }
-    }
-
     // Inizializzazione
     async function init() {
         try {
@@ -451,11 +527,6 @@
 
     // Avvio
     window.addEventListener('DOMContentLoaded', init);
-
-    // UI Functions
-    function showForm() {
-        document.getElementById('campaignForm').classList.remove('hidden');
-    }
     </script>
 </body>
 </html>
