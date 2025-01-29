@@ -33,6 +33,12 @@
             border-radius: 0.375rem;
             font-size: 0.875rem;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .campaign-event:hover {
+            transform: translateX(2px);
         }
 
         .campaign-title {
@@ -76,6 +82,12 @@
                 <div class="border-l border-gray-300 h-8 mx-4"></div>
                 <h1 class="text-3xl font-bold text-gray-800">Calendario Campagne Social</h1>
             </div>
+            <div class="space-x-2 no-print">
+                <button onclick="window.print()" 
+                        class="px-4 py-2 bg-[#006B4F] text-white rounded-lg hover:bg-[#005940]">
+                    <i class="fas fa-print mr-2"></i>Stampa
+                </button>
+            </div>
         </div>
 
         <!-- Calendario -->
@@ -94,14 +106,6 @@
             <div id="calendar" class="calendar-grid"></div>
         </div>
 
-        <!-- Controlli -->
-        <div class="flex justify-end mb-4 space-x-2">
-            <button onclick="window.print()" 
-                    class="px-4 py-2 bg-[#006B4F] text-white rounded-lg hover:bg-[#005940]">
-                <i class="fas fa-print mr-2"></i>Stampa
-            </button>
-        </div>
-
         <!-- Lista Campagne -->
         <div class="bg-gray-50 rounded-lg shadow-sm p-6">
             <h2 class="text-xl font-bold mb-6 text-gray-800">Elenco Campagne</h2>
@@ -110,7 +114,6 @@
                     <thead>
                         <tr class="bg-white">
                             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Campagna</th>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Anteprima</th>
                             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Link</th>
                             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Periodo</th>
                             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
@@ -127,6 +130,15 @@
         // Variabili globali
         let campaigns = [];
         let currentDate = new Date();
+
+        // Colori canali social
+        const channelColors = {
+            Instagram: '#E4405F',
+            Facebook: '#2D88FF', 
+            LinkedIn: '#5C6BC0',
+            Twitter: '#00ACEE',
+            YouTube: '#FF3D00'
+        };
 
         // Configurazione axios
         const github = axios.create({
@@ -153,27 +165,21 @@
             return savedToken;
         }
 
-        // Costanti per i colori
-        const channelColors = {
-            Instagram: '#E4405F',
-            Facebook: '#2D88FF', 
-            LinkedIn: '#5C6BC0',
-            Twitter: '#00ACEE',
-            YouTube: '#FF3D00'
-        };
+        // Funzioni di navigazione
+        function prevMonth() {
+            currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1);
+            renderCalendar();
+        }
 
         // Funzioni di rendering
         function renderCalendar() {
             const calendar = document.getElementById('calendar');
-            if (!calendar) {
-                console.error('Elemento calendario non trovato');
-                return;
-            }
-            
-            console.log('Rendering calendario...', {
-                currentDate,
-                campaigns: campaigns.length
-            });
+            if (!calendar) return;
             
             calendar.innerHTML = '';
             
@@ -214,8 +220,7 @@
                 
                 dayEvents.forEach(campaign => {
                     const eventDiv = document.createElement('div');
-                    eventDiv.className = `campaign-event ${campaign.isDark ? 'dark-mode' : ''} 
-                        text-white text-xs p-1 rounded cursor-pointer`;
+                    eventDiv.className = `campaign-event text-white text-xs p-1 rounded`;
                     eventDiv.style.backgroundColor = channelColors[campaign.channel];
                     
                     const title = document.createElement('div');
@@ -225,7 +230,7 @@
                     
                     const type = document.createElement('div');
                     type.className = 'campaign-type text-xs opacity-75';
-                    type.textContent = `${campaign.type} - ${campaign.channel}`;
+                    type.textContent = campaign.type;
                     eventDiv.appendChild(type);
                     
                     cell.appendChild(eventDiv);
@@ -246,67 +251,43 @@
             const list = document.getElementById('campaignsList');
             if (!list) return;
             
-            list.innerHTML = '';
-            
             if (!campaigns || campaigns.length === 0) {
                 list.innerHTML = `
-                    <div class="bg-white rounded-lg shadow-sm p-6 text-center text-gray-500">
-                        Nessuna campagna presente
-                    </div>
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            Nessuna campagna presente
+                        </td>
+                    </tr>
                 `;
                 return;
             }
-
-            list.innerHTML = `
-                <table class="w-full">
-                    <thead>
-                        <tr class="bg-white">
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Campagna</th>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Anteprima</th>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Link</th>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Periodo</th>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Canale</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${campaigns.map(campaign => `
-                            <tr class="bg-white">
-                                <td class="px-6 py-4">${campaign.title}</td>
-                                <td class="px-6 py-4">
-                                    ${campaign.thumbnail ? `
-                                        <img src="${campaign.thumbnail}" 
-                                             alt="Anteprima" 
-                                             class="h-16 w-16 object-cover rounded">
-                                    ` : ''}
-                                </td>
-                                <td class="px-6 py-4">
-                                    ${campaign.link ? `
-                                        <a href="${campaign.link}" 
-                                           class="text-blue-500 hover:underline" 
-                                           target="_blank">
-                                            <i class="fas fa-external-link-alt mr-1"></i>Link
-                                        </a>
-                                    ` : ''}
-                                </td>
-                                <td class="px-6 py-4 text-sm">${campaign.startDate} → ${campaign.endDate}</td>
-                                <td class="px-6 py-4">${campaign.type}</td>
-                                <td class="px-6 py-4">
-                                    <span style="color: ${channelColors[campaign.channel]}">
-                                        ${campaign.channel}
-                                    </span>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+            
+            list.innerHTML = campaigns.map(campaign => `
+                <tr class="bg-white">
+                    <td class="px-6 py-4">${campaign.title}</td>
+                    <td class="px-6 py-4">
+                        ${campaign.link ? `
+                            <a href="${campaign.link}" 
+                               class="text-blue-500 hover:underline" 
+                               target="_blank">
+                                <i class="fas fa-external-link-alt mr-1"></i>Link
+                            </a>
+                        ` : ''}
+                    </td>
+                    <td class="px-6 py-4 text-sm">${campaign.startDate} → ${campaign.endDate}</td>
+                    <td class="px-6 py-4">${campaign.type}</td>
+                    <td class="px-6 py-4">
+                        <span style="color: ${channelColors[campaign.channel]}">
+                            ${campaign.channel}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
         }
 
         // Caricamento dati
         async function loadSharedData() {
             try {
-                console.log('Caricamento dati...');
                 const token = getGitHubToken();
                 if (!token) {
                     throw new Error('Token GitHub non valido');
@@ -314,8 +295,6 @@
 
                 const urlParams = new URLSearchParams(window.location.search);
                 const gistId = urlParams.get('id');
-                
-                console.log('GistID:', gistId);
                 
                 if (!gistId) {
                     throw new Error('ID condivisione non valido');
@@ -330,48 +309,26 @@
                     throw new Error('Dati non trovati');
                 }
 
-                console.log('Dati ricevuti:', fileContent);
                 const shareData = JSON.parse(fileContent);
-
                 campaigns = shareData.campaigns || [];
-                currentDate = new Date(shareData.currentMonth?.year || new Date().getFullYear(), 
-                                     shareData.currentMonth?.month || new Date().getMonth());
-
-                console.log('Dati caricati:', {
-                    campaigns: campaigns.length,
-                    currentDate
-                });
+                
+                if (shareData.currentMonth) {
+                    currentDate = new Date(shareData.currentMonth.year, shareData.currentMonth.month);
+                }
                 
                 renderCalendar();
                 renderCampaigns();
             } catch (error) {
                 console.error('Errore nel caricamento:', error);
-                // Mostra comunque il calendario anche in caso di errore
-                renderCalendar();
-                renderCampaigns();
+                showError(`Errore: ${error.message}`);
             }
         }
 
-        // Avvio
+        // Inizializzazione
         window.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM caricato, inizializzazione...');
-            // Renderizza subito il calendario vuoto
-            renderCalendar();
-            renderCampaigns();
-            // Poi carica i dati
-            loadSharedData();
+            renderCalendar();  // Mostra calendario vuoto
+            loadSharedData(); // Carica i dati
         });
-
-        // Funzioni di navigazione calendario
-        function prevMonth() {
-            currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1);
-            renderCalendar();
-        }
-
-        function nextMonth() {
-            currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1);
-            renderCalendar();
-        }
     </script>
 </body>
 </html> 
