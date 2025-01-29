@@ -6,8 +6,7 @@
     <title>Calendario Campagne Social</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/octokit/dist/index.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@octokit/rest/dist/octokit-rest.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@octokit/core/dist/index.min.js"></script>
     <style>
         body {
             background-color: #f8fafc;
@@ -273,7 +272,7 @@
     // Configurazione GitHub
     const GITHUB_TOKEN = initGitHub();
     const GIST_ID = '19150d88db1d0dc544346730204d27a5';
-    const octokit = new Octokit({ auth: GITHUB_TOKEN });
+    const octokit = new Octokit.Octokit({ auth: GITHUB_TOKEN });
 
     // Funzione per caricare i dati all'avvio
     async function loadCampaigns() {
