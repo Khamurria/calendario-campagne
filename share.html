@@ -153,19 +153,27 @@
             return savedToken;
         }
 
-        // Aggiungi la configurazione dei colori dei canali
+        // Costanti per i colori
         const channelColors = {
-            Instagram: '#E4405F',     // Rosa corallo
-            Facebook: '#2D88FF',      // Blu cielo
-            LinkedIn: '#5C6BC0',      // Indaco
-            Twitter: '#00ACEE',       // Azzurro chiaro
-            YouTube: '#FF3D00'        // Arancione acceso
+            Instagram: '#E4405F',
+            Facebook: '#2D88FF', 
+            LinkedIn: '#5C6BC0',
+            Twitter: '#00ACEE',
+            YouTube: '#FF3D00'
         };
 
         // Funzioni di rendering
         function renderCalendar() {
             const calendar = document.getElementById('calendar');
-            if (!calendar) return;
+            if (!calendar) {
+                console.error('Elemento calendario non trovato');
+                return;
+            }
+            
+            console.log('Rendering calendario...', {
+                currentDate,
+                campaigns: campaigns.length
+            });
             
             calendar.innerHTML = '';
             
@@ -295,9 +303,10 @@
             `;
         }
 
-        // Caricamento dati condivisi
+        // Caricamento dati
         async function loadSharedData() {
             try {
+                console.log('Caricamento dati...');
                 const token = getGitHubToken();
                 if (!token) {
                     throw new Error('Token GitHub non valido');
@@ -305,6 +314,8 @@
 
                 const urlParams = new URLSearchParams(window.location.search);
                 const gistId = urlParams.get('id');
+                
+                console.log('GistID:', gistId);
                 
                 if (!gistId) {
                     throw new Error('ID condivisione non valido');
@@ -318,26 +329,38 @@
                 if (!fileContent) {
                     throw new Error('Dati non trovati');
                 }
+
+                console.log('Dati ricevuti:', fileContent);
                 const shareData = JSON.parse(fileContent);
 
-                // Verifica scadenza
-                if (new Date(shareData.expiresAt) < new Date()) {
-                    throw new Error('Questa condivisione è scaduta');
-                }
+                campaigns = shareData.campaigns || [];
+                currentDate = new Date(shareData.currentMonth?.year || new Date().getFullYear(), 
+                                     shareData.currentMonth?.month || new Date().getMonth());
 
-                campaigns = shareData.campaigns;
-                currentDate = new Date(shareData.currentMonth.year, shareData.currentMonth.month);
+                console.log('Dati caricati:', {
+                    campaigns: campaigns.length,
+                    currentDate
+                });
                 
                 renderCalendar();
                 renderCampaigns();
             } catch (error) {
                 console.error('Errore nel caricamento:', error);
-                showError(`Errore: ${error.message}`);
+                // Mostra comunque il calendario anche in caso di errore
+                renderCalendar();
+                renderCampaigns();
             }
         }
 
         // Avvio
-        window.addEventListener('DOMContentLoaded', loadSharedData);
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM caricato, inizializzazione...');
+            // Renderizza subito il calendario vuoto
+            renderCalendar();
+            renderCampaigns();
+            // Poi carica i dati
+            loadSharedData();
+        });
 
         // Funzioni di navigazione calendario
         function prevMonth() {
