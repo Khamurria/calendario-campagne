@@ -94,12 +94,12 @@
         <div class="bg-gray-50 rounded-lg shadow-sm p-6 mb-8">
             <div class="flex justify-between items-center mb-6">
                 <button onclick="prevMonth()" 
-                        class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+                        class="px-4 py-2 bg-[#006B4F] text-white rounded-lg hover:bg-[#005940]">
                     <i class="fas fa-chevron-left"></i>
                 </button>
                 <div id="currentMonth" class="text-2xl font-bold text-gray-800"></div>
                 <button onclick="nextMonth()" 
-                        class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+                        class="px-4 py-2 bg-[#006B4F] text-white rounded-lg hover:bg-[#005940]">
                     <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
@@ -318,9 +318,15 @@
                 
                 renderCalendar();
                 renderCampaigns();
+                console.log('Dati caricati con successo:', {
+                    campaigns: campaigns.length,
+                    currentDate: currentDate.toISOString()
+                });
             } catch (error) {
                 console.error('Errore nel caricamento:', error);
-                showError(`Errore: ${error.message}`);
+                showError('Non è stato possibile caricare i dati. Riprova più tardi.');
+                renderCalendar();
+                renderCampaigns();
             }
         }
 
