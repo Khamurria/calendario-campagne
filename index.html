@@ -367,12 +367,15 @@
     // Funzioni UI
     function toggleNewCampaign() {
         const formDiv = document.getElementById('campaignForm');
-        const isHidden = formDiv.classList.contains('hidden');
+        if (!formDiv) return;  // Aggiungere controllo null
         
+        const isHidden = formDiv.classList.contains('hidden');
         formDiv.classList.toggle('hidden');
         
-        // Aggiorna il pulsante
-        document.getElementById('actionButton').innerHTML = isHidden ? `
+        const actionButton = document.getElementById('actionButton');
+        if (!actionButton) return;  // Aggiungere controllo null
+        
+        actionButton.innerHTML = isHidden ? `
             <button onclick="toggleNewCampaign()" 
                     class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
                 <i class="fas fa-times mr-2"></i>Annulla
@@ -384,10 +387,11 @@
             </button>
         `;
         
-        // Reset del form quando viene chiuso
         if (!isHidden) {
-            formDiv.querySelector('form')?.reset();
-            document.getElementById('thumbnailPreview')?.classList.add('hidden');
+            const form = formDiv.querySelector('form');
+            if (form) form.reset();
+            const preview = document.getElementById('thumbnailPreview');
+            if (preview) preview.classList.add('hidden');
         }
     }
 
