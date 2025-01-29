@@ -6,7 +6,7 @@
     <title>Calendario Campagne Social</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/octokit/dist/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
         body {
             background-color: #f8fafc;
@@ -251,14 +251,20 @@
     </div>
 
     <script>
-    // All'inizio dello script
+    // Variabili globali
     let campaigns = [];
     let currentDate = new Date();
-
-    // Costanti
     const GIST_ID = '19150d88db1d0dc544346730204d27a5';
 
-    // Funzione per gestire il token
+    // Configurazione axios per GitHub
+    const github = axios.create({
+        baseURL: 'https://api.github.com',
+        headers: {
+            'Accept': 'application/vnd.github.v3+json'
+        }
+    });
+
+    // Gestione token
     function getGitHubToken() {
         const savedToken = localStorage.getItem('github_token');
         if (!savedToken) {
@@ -272,57 +278,52 @@
         return savedToken;
     }
 
-    // Funzioni GitHub senza Octokit
+    // API GitHub
     async function saveToGist(data) {
-        const token = getGitHubToken();
-        const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+        try {
+            const token = getGitHubToken();
+            const response = await github.patch(`/gists/${GIST_ID}`, {
                 files: {
                     'calendar_data.json': {
                         content: JSON.stringify(data)
                     }
                 }
-            })
-        });
-        if (!response.ok) throw new Error('Errore nel salvataggio');
-        return response.json();
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Errore nel salvataggio:', error);
+            throw new Error('Errore nel salvataggio dei dati');
+        }
     }
 
     async function loadFromGist() {
-        const token = getGitHubToken();
-        const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        if (!response.ok) throw new Error('Errore nel caricamento');
-        const data = await response.json();
-        return JSON.parse(data.files['calendar_data.json'].content);
+        try {
+            const token = getGitHubToken();
+            const response = await github.get(`/gists/${GIST_ID}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return JSON.parse(response.data.files['calendar_data.json'].content);
+        } catch (error) {
+            console.error('Errore nel caricamento:', error);
+            throw new Error('Errore nel caricamento dei dati');
+        }
     }
 
     async function shareCalendar() {
-        const token = getGitHubToken();
-        const shareData = {
-            campaigns,
-            currentMonth: {
-                year: currentDate.getFullYear(),
-                month: currentDate.getMonth()
-            },
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        };
+        try {
+            const token = getGitHubToken();
+            const shareData = {
+                campaigns,
+                currentMonth: {
+                    year: currentDate.getFullYear(),
+                    month: currentDate.getMonth()
+                },
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+            };
 
-        const response = await fetch('https://api.github.com/gists', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+            const response = await github.post('/gists', {
                 files: {
                     'shared_calendar.json': {
                         content: JSON.stringify(shareData)
@@ -330,17 +331,20 @@
                 },
                 description: 'Calendario Campagne Social - Condivisione',
                 public: true
-            })
-        });
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-        if (!response.ok) throw new Error('Errore nella condivisione');
-        const result = await response.json();
-        const shareUrl = `${window.location.origin}/share.html?id=${result.id}`;
-        await navigator.clipboard.writeText(shareUrl);
-        alert('Link di condivisione copiato negli appunti!\n\nIl link scadrà tra 7 giorni.');
+            const shareUrl = `${window.location.origin}/share.html?id=${response.data.id}`;
+            await navigator.clipboard.writeText(shareUrl);
+            alert('Link di condivisione copiato negli appunti!\n\nIl link scadrà tra 7 giorni.');
+        } catch (error) {
+            console.error('Errore nella condivisione:', error);
+            showError('Errore nella creazione del link. Riprova più tardi.');
+        }
     }
 
-    // Funzioni principali
+    // Funzioni di gestione campagne
     async function saveCampaign(event) {
         event.preventDefault();
         const form = event.target;
@@ -543,6 +547,11 @@
 
     // Inizializzazione al caricamento della pagina
     window.addEventListener('DOMContentLoaded', initCalendar);
+
+    // Utility
+    function showError(message) {
+        alert(message);
+    }
     </script>
 </body>
 </html>

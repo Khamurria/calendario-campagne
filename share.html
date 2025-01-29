@@ -6,7 +6,7 @@
     <title>Calendario Campagne Social - Vista Condivisa</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/octokit/dist/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
         .calendar-grid {
             display: grid;
@@ -110,8 +110,20 @@
     </div>
 
     <script>
-        // Funzione per gestire il token
-        function initGitHub() {
+        // Variabili globali
+        let campaigns = [];
+        let currentDate = new Date();
+
+        // Configurazione axios per GitHub
+        const github = axios.create({
+            baseURL: 'https://api.github.com',
+            headers: {
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+
+        // Gestione token
+        function getGitHubToken() {
             const savedToken = localStorage.getItem('github_token');
             if (!savedToken) {
                 const token = prompt('Inserisci il tuo GitHub token:');
@@ -124,14 +136,10 @@
             return savedToken;
         }
 
-        // Configurazione GitHub
-        const GITHUB_TOKEN = initGitHub();
-        const GIST_ID = '19150d88db1d0dc544346730204d27a5';
-        const octokit = new Octokit({ auth: GITHUB_TOKEN });
-
-        // Funzione per caricare i dati condivisi
+        // Caricamento dati condivisi
         async function loadSharedData() {
             try {
+                const token = getGitHubToken();
                 const urlParams = new URLSearchParams(window.location.search);
                 const gistId = urlParams.get('id');
                 
@@ -139,8 +147,8 @@
                     throw new Error('ID condivisione non valido');
                 }
 
-                const response = await octokit.request('GET /gists/{gist_id}', {
-                    gist_id: gistId
+                const response = await github.get(`/gists/${gistId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 const content = response.data.files['shared_calendar.json'].content;
