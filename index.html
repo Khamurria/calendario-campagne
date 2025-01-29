@@ -252,7 +252,7 @@
     </div>
 
     <script>
-    // Utility functions - Mettiamo questa per prima così è disponibile ovunque
+    // Utility functions - DEVE essere definita prima di tutto
     function showError(message) {
         alert(message);
     }
@@ -338,7 +338,6 @@
     // Event Listeners
     window.addEventListener('DOMContentLoaded', () => {
         initCalendar();
-        initTabs();
     });
 
     // Le funzioni renderCalendar, renderCampaigns e altre funzioni UI rimangono uguali
