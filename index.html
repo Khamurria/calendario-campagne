@@ -254,7 +254,7 @@
     </div>
 
     <script>
-    // Utility functions
+    // Utility functions - DEVE essere definita prima di tutto
     function showError(message) {
         alert(message);
     }
@@ -264,15 +264,7 @@
     let currentDate = new Date();
     const GIST_ID = '19150d88db1d0dc544346730204d27a5';
 
-    // Configurazione axios per GitHub
-    const github = axios.create({
-        baseURL: 'https://api.github.com',
-        headers: {
-            'Accept': 'application/vnd.github.v3+json'
-        }
-    });
-
-    // Funzioni di rendering
+    // Funzioni di rendering - DEVONO essere definite prima di initCalendar
     function renderCalendar() {
         const calendar = document.getElementById('calendar');
         calendar.innerHTML = '';
@@ -386,6 +378,44 @@
         });
     }
 
+    // Funzione per gestire i tab
+    function initTabs() {
+        const tabs = document.querySelectorAll('[data-tab]');
+        if (!tabs.length) return; // Se non ci sono tab, non fare nulla
+        
+        const defaultTab = document.querySelector('[data-tab="calendar"]');
+        if (defaultTab) {
+            defaultTab.classList.remove('bg-gray-500');
+            defaultTab.classList.add('bg-[#006B4F]');
+        }
+        
+        tabs.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+                
+                // Aggiorna stile pulsanti
+                tabs.forEach(btn => {
+                    btn.classList.remove('bg-[#006B4F]');
+                    btn.classList.add('bg-gray-500');
+                });
+                button.classList.remove('bg-gray-500');
+                button.classList.add('bg-[#006B4F]');
+                
+                // Mostra/nascondi contenuto
+                document.getElementById('campaignsTab')?.classList.toggle('hidden', tabId !== 'campaigns');
+                document.getElementById('calendarTab')?.classList.toggle('hidden', tabId !== 'calendar');
+            });
+        });
+    }
+
+    // Configurazione axios per GitHub
+    const github = axios.create({
+        baseURL: 'https://api.github.com',
+        headers: {
+            'Accept': 'application/vnd.github.v3+json'
+        }
+    });
+
     // Funzioni GitHub
     async function loadCampaigns() {
         try {
@@ -433,7 +463,10 @@
     }
 
     // Event Listeners
-    window.addEventListener('DOMContentLoaded', initCalendar);
+    window.addEventListener('DOMContentLoaded', () => {
+        initCalendar();
+        initTabs();
+    });
 
     // Funzioni di gestione campagne
     async function saveCampaign(event) {
