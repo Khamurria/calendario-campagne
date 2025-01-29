@@ -100,6 +100,7 @@
                     <thead>
                         <tr class="bg-white">
                             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Campagna</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Anteprima</th>
                             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Link</th>
                             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Periodo</th>
                             <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
@@ -141,6 +142,15 @@
             }
             return savedToken;
         }
+
+        // Aggiungi la configurazione dei colori dei canali
+        const channelColors = {
+            Instagram: '#E4405F',     // Rosa corallo
+            Facebook: '#2D88FF',      // Blu cielo
+            LinkedIn: '#5C6BC0',      // Indaco
+            Twitter: '#00ACEE',       // Azzurro chiaro
+            YouTube: '#FF3D00'        // Arancione acceso
+        };
 
         // Funzioni di rendering
         function renderCalendar() {
@@ -184,18 +194,20 @@
                     return campaign.startDate <= currentDateStr && campaign.endDate >= currentDateStr;
                 });
                 
-                dayEvents.forEach(event => {
+                dayEvents.forEach(campaign => {
                     const eventDiv = document.createElement('div');
-                    eventDiv.className = `campaign-event ${event.isDark ? 'bg-gray-800 text-white' : 'bg-green-100'} rounded p-1 mb-1 text-xs`;
+                    eventDiv.className = `campaign-event ${campaign.isDark ? 'dark-mode' : ''} 
+                        text-white text-xs p-1 rounded cursor-pointer`;
+                    eventDiv.style.backgroundColor = channelColors[campaign.channel];
                     
                     const title = document.createElement('div');
                     title.className = 'campaign-title';
-                    title.textContent = event.title;
+                    title.textContent = campaign.title;
                     eventDiv.appendChild(title);
                     
                     const type = document.createElement('div');
                     type.className = 'campaign-type text-xs opacity-75';
-                    type.textContent = `${event.type} - ${event.channel}`;
+                    type.textContent = `${campaign.type} - ${campaign.channel}`;
                     eventDiv.appendChild(type);
                     
                     cell.appendChild(eventDiv);
@@ -218,49 +230,59 @@
             
             list.innerHTML = '';
             
-            campaigns.forEach(campaign => {
-                const row = document.createElement('tr');
-                row.className = 'bg-white';
-                
-                // Titolo
-                const titleCell = document.createElement('td');
-                titleCell.className = 'px-6 py-4';
-                titleCell.textContent = campaign.title;
-                row.appendChild(titleCell);
-                
-                // Link
-                const linkCell = document.createElement('td');
-                linkCell.className = 'px-6 py-4';
-                if (campaign.link) {
-                    const link = document.createElement('a');
-                    link.href = campaign.link;
-                    link.target = '_blank';
-                    link.className = 'text-blue-500 hover:underline';
-                    link.textContent = 'Vedi →';
-                    linkCell.appendChild(link);
-                }
-                row.appendChild(linkCell);
-                
-                // Periodo
-                const periodCell = document.createElement('td');
-                periodCell.className = 'px-6 py-4 text-sm';
-                periodCell.textContent = `${campaign.startDate} → ${campaign.endDate}`;
-                row.appendChild(periodCell);
-                
-                // Tipo
-                const typeCell = document.createElement('td');
-                typeCell.className = 'px-6 py-4';
-                typeCell.textContent = campaign.type;
-                row.appendChild(typeCell);
-                
-                // Canale
-                const channelCell = document.createElement('td');
-                channelCell.className = 'px-6 py-4';
-                channelCell.textContent = campaign.channel;
-                row.appendChild(channelCell);
-                
-                list.appendChild(row);
-            });
+            if (!campaigns || campaigns.length === 0) {
+                list.innerHTML = `
+                    <div class="bg-white rounded-lg shadow-sm p-6 text-center text-gray-500">
+                        Nessuna campagna presente
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = `
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-white">
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Campagna</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Anteprima</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Link</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Periodo</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Canale</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${campaigns.map(campaign => `
+                            <tr class="bg-white">
+                                <td class="px-6 py-4">${campaign.title}</td>
+                                <td class="px-6 py-4">
+                                    ${campaign.thumbnail ? `
+                                        <img src="${campaign.thumbnail}" 
+                                             alt="Anteprima" 
+                                             class="h-16 w-16 object-cover rounded">
+                                    ` : ''}
+                                </td>
+                                <td class="px-6 py-4">
+                                    ${campaign.link ? `
+                                        <a href="${campaign.link}" 
+                                           class="text-blue-500 hover:underline" 
+                                           target="_blank">
+                                            <i class="fas fa-external-link-alt mr-1"></i>Link
+                                        </a>
+                                    ` : ''}
+                                </td>
+                                <td class="px-6 py-4 text-sm">${campaign.startDate} → ${campaign.endDate}</td>
+                                <td class="px-6 py-4">${campaign.type}</td>
+                                <td class="px-6 py-4">
+                                    <span style="color: ${channelColors[campaign.channel]}">
+                                        ${campaign.channel}
+                                    </span>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
         }
 
         // Caricamento dati condivisi
