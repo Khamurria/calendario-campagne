@@ -158,7 +158,15 @@
                 <div class="border-l border-gray-300 h-8 mx-4"></div>
                 <h1 class="text-3xl font-bold text-gray-800">Calendario Campagne Social</h1>
             </div>
-            <div id="actionButton" class="space-x-2">
+            <div class="space-x-2">
+                <button onclick="toggleView('calendar')" 
+                        class="px-4 py-2 bg-[#006B4F] text-white rounded-lg hover:bg-[#005940]">
+                    <i class="fas fa-calendar-alt mr-2"></i>Calendario
+                </button>
+                <button onclick="toggleView('list')" 
+                        class="px-4 py-2 bg-[#006B4F] text-white rounded-lg hover:bg-[#005940]">
+                    <i class="fas fa-list mr-2"></i>Lista
+                </button>
                 <button onclick="toggleNewCampaign()" 
                         class="px-4 py-2 bg-[#006B4F] text-white rounded-lg hover:bg-[#005940]">
                     <i class="fas fa-plus mr-2"></i>Nuova Campagna
@@ -241,30 +249,28 @@
             </form>
         </div>
 
-        <!-- Calendario -->
-        <div class="bg-gray-50 rounded-lg shadow-sm p-6 mb-8">
-            <div class="flex justify-between items-center mb-6">
-                <div id="currentMonth" class="text-2xl font-bold text-gray-800"></div>
+        <!-- Viste -->
+        <div id="calendarView" class="hidden">
+            <div class="bg-gray-50 rounded-lg shadow-sm p-6 mb-8">
+                <!-- Contenuto del calendario -->
+                <div class="flex justify-between items-center mb-6">
+                    <button onclick="prevMonth()" class="px-4 py-2 bg-[#006B4F] text-white rounded-lg hover:bg-[#005940]">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div id="currentMonth" class="text-2xl font-bold text-gray-800"></div>
+                    <button onclick="nextMonth()" class="px-4 py-2 bg-[#006B4F] text-white rounded-lg hover:bg-[#005940]">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div id="calendar" class="calendar-grid"></div>
             </div>
-            <div id="calendar" class="calendar-grid"></div>
         </div>
 
-        <!-- Lista Campagne -->
-        <div class="bg-gray-50 rounded-lg shadow-sm p-6">
-            <h2 class="text-xl font-bold mb-6 text-gray-800">Elenco Campagne</h2>
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="bg-white">
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Campagna</th>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Link</th>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Periodo</th>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
-                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Canale</th>
-                        </tr>
-                    </thead>
-                    <tbody id="campaignsList" class="divide-y divide-gray-200"></tbody>
-                </table>
+        <div id="listView">
+            <!-- Lista campagne -->
+            <div class="bg-gray-50 rounded-lg shadow-sm p-6">
+                <h2 class="text-xl font-bold mb-6 text-gray-800">Elenco Campagne</h2>
+                <div id="campaignsList"></div>
             </div>
         </div>
     </div>
@@ -399,6 +405,22 @@
         } catch (error) {
             console.error('Errore durante il toggle del form:', error);
             showError('Errore durante l\'apertura/chiusura del form');
+        }
+    }
+
+    // Nuova funzione per gestire le viste
+    function toggleView(view) {
+        const calendarView = document.getElementById('calendarView');
+        const listView = document.getElementById('listView');
+        
+        if (view === 'calendar') {
+            calendarView.classList.remove('hidden');
+            listView.classList.add('hidden');
+            renderCalendar();
+        } else {
+            calendarView.classList.add('hidden');
+            listView.classList.remove('hidden');
+            renderCampaigns();
         }
     }
 
@@ -699,28 +721,11 @@
         }
     }
 
-    // Aggiungiamo la funzione per gestire la vista calendario
-    function showCalendarView() {
-        const calendarView = document.getElementById('calendar');
-        const listView = document.getElementById('campaignsList').closest('.bg-gray-50');
-        
-        if (calendarView && listView) {
-            calendarView.closest('.bg-gray-50').classList.remove('hidden');
-            listView.classList.add('hidden');
-            renderCalendar(); // Aggiorniamo il calendario
-        }
-    }
-
-    // Modifichiamo l'inizializzazione
+    // Inizializzazione
     function initializeApp() {
         try {
-            renderCalendar();
             loadCampaigns();
-            // Nascondiamo inizialmente il calendario
-            const calendarView = document.getElementById('calendar');
-            if (calendarView) {
-                calendarView.closest('.bg-gray-50').classList.add('hidden');
-            }
+            toggleView('list'); // Mostra la lista all'avvio
         } catch (error) {
             console.error('Errore durante l\'inizializzazione:', error);
             showError('Errore durante l\'inizializzazione dell\'app');
