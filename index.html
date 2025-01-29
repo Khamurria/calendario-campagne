@@ -252,6 +252,10 @@
     </div>
 
     <script>
+    // All'inizio dello script
+    let campaigns = [];
+    let currentDate = new Date();
+
     // Funzione per gestire il token
     function initGitHub() {
         const savedToken = localStorage.getItem('github_token');
@@ -270,9 +274,6 @@
     const GITHUB_TOKEN = initGitHub();
     const GIST_ID = '19150d88db1d0dc544346730204d27a5';
     const octokit = new Octokit({ auth: GITHUB_TOKEN });
-
-    let campaigns = [];
-    let currentDate = new Date();
 
     // Funzione per caricare i dati all'avvio
     async function loadCampaigns() {
@@ -523,6 +524,32 @@
             // Mostra/nascondi contenuto
             document.getElementById('campaignsTab').classList.toggle('hidden', tabId !== 'campaigns');
             document.getElementById('calendarTab').classList.toggle('hidden', tabId !== 'calendar');
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadCampaigns(); // Carica i dati
+        
+        // Gestione tab
+        document.querySelectorAll('[data-tab]').forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+                
+                // Aggiorna stile pulsanti
+                document.querySelectorAll('[data-tab]').forEach(btn => {
+                    if (btn === button) {
+                        btn.classList.remove('bg-gray-500');
+                        btn.classList.add('bg-[#006B4F]');
+                    } else {
+                        btn.classList.remove('bg-[#006B4F]');
+                        btn.classList.add('bg-gray-500');
+                    }
+                });
+                
+                // Mostra/nascondi contenuto
+                document.getElementById('campaignsTab').classList.toggle('hidden', tabId !== 'campaigns');
+                document.getElementById('calendarTab').classList.toggle('hidden', tabId !== 'calendar');
+            });
         });
     });
     </script>
