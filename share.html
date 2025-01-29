@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario Campagne Social - Vista Condivisa</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            background-color: #f3f4f6;
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .calendar-cell {
+            background-color: white;
+            min-height: 120px;
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .campaign-event {
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .campaign-title {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .day-header {
+            text-align: center;
+            font-weight: 600;
+            padding: 0.75rem;
+            background-color: #f8fafc;
+            border-radius: 6px;
+            color: #4b5563;
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+            body {
+                background-color: white;
+            }
+            .shadow-sm {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-white">
+    <div class="container mx-auto p-6 max-w-7xl">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8 bg-white p-4">
+            <div class="flex items-center">
+                <img src="../img/regione-lombardia.jpg" 
+                     alt="Logo Regione Lombardia" 
+                     class="h-12 w-auto object-contain mr-4">
+                <div class="border-l border-gray-300 h-8 mx-4"></div>
+                <h1 class="text-3xl font-bold text-gray-800">Calendario Campagne Social</h1>
+            </div>
+            <div class="space-x-2 no-print">
+                <button onclick="window.print()" 
+                        class="px-4 py-2 bg-[#006B4F] text-white rounded-lg hover:bg-[#005940] transition-colors">
+                    <i class="fas fa-print mr-2"></i>Stampa
+                </button>
+            </div>
+        </div>
+
+        <!-- Calendario -->
+        <div class="bg-gray-50 rounded-lg shadow-sm p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <div id="currentMonth" class="text-2xl font-bold text-gray-800"></div>
+            </div>
+            <div id="calendar" class="calendar-grid"></div>
+        </div>
+
+        <!-- Lista Campagne -->
+        <div class="bg-gray-50 rounded-lg shadow-sm p-6">
+            <h2 class="text-xl font-bold mb-6 text-gray-800">Elenco Campagne</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-white">
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Campagna</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Link</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Periodo</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Canale</th>
+                        </tr>
+                    </thead>
+                    <tbody id="campaignsList" class="divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Funzione per gestire il token
+        function initGitHub() {
+            const savedToken = localStorage.getItem('github_token');
+            if (!savedToken) {
+                const token = prompt('Inserisci il tuo GitHub token:');
+                if (token) {
+                    localStorage.setItem('github_token', token);
+                    return token;
+                }
+                return '';
+            }
+            return savedToken;
+        }
+
+        // Configurazione GitHub
+        const GITHUB_TOKEN = initGitHub();
+        const GIST_ID = '19150d88db1d0dc544346730204d27a5';
+        const octokit = new Octokit({ auth: GITHUB_TOKEN });
+
+        // Funzione per caricare i dati condivisi
+        async function loadSharedData() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const gistId = urlParams.get('id');
+                
+                if (!gistId) {
+                    throw new Error('ID condivisione non valido');
+                }
+
+                const response = await octokit.request('GET /gists/{gist_id}', {
+                    gist_id: gistId
+                });
+
+                const content = response.data.files['shared_calendar.json'].content;
+                const shareData = JSON.parse(content);
+
+                // Verifica scadenza
+                if (new Date(shareData.expiresAt) < new Date()) {
+                    throw new Error('Questa condivisione è scaduta');
+                }
+
+                campaigns = shareData.campaigns;
+                currentDate = new Date(shareData.currentMonth.year, shareData.currentMonth.month);
+                
+                renderCalendar();
+                renderCampaigns();
+            } catch (error) {
+                console.error('Errore nel caricamento:', error);
+                showError(`Errore: ${error.message}`);
+            }
+        }
+
+        // Rimuovi tutte le funzioni relative a Google Sheets
+
+        // Inizializzazione
+        window.addEventListener('DOMContentLoaded', loadSharedData);
+    </script>
+</body>
+</html> 

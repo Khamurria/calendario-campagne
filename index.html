@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario Campagne Social</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/octokit/dist/index.min.js"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #1a202c;
+        }
+        
+        .container {
+            max-width: 1400px;
+        }
+        
+        .tab-button {
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .tab-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .campagna-card {
+            border-left-width: 4px;
+        }
+        
+        .dark-mode {
+            position: relative;
+        }
+        
+        .dark-mode::after {
+            content: '•';
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #000;
+            font-size: 32px;
+            line-height: 1;
+            opacity: 0.8;
+        }
+
+        .calendar-cell {
+            min-height: 100px;
+            max-height: 180px;  /* Altezza massima fissa */
+            transition: all 0.2s ease;
+            overflow-y: auto;   /* Scroll verticale se necessario */
+        }
+        
+        .calendar-cell::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .calendar-cell::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 2px;
+        }
+        
+        .campaign-event {
+            padding: 2px;
+            margin-bottom: 2px;
+            font-size: 0.7rem;  /* Testo più piccolo */
+            line-height: 1.2;   /* Interlinea ridotta */
+        }
+        
+        .campaign-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .campaign-type {
+            font-size: 0.65rem;
+            opacity: 0.9;
+        }
+
+        .campaign-event {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .campaign-event:hover {
+            transform: translateX(2px);
+        }
+
+        .action-button {
+            transition: all 0.2s ease;
+        }
+        
+        .action-button:hover {
+            transform: scale(1.1);
+        }
+
+        tr.editing .campaign-text { display: none; }
+        tr.editing .campaign-input { display: block; }
+
+        .form-input {
+            transition: all 0.2s ease;
+        }
+        
+        .form-input:focus {
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background-color: #e5e7eb;
+            padding: 1px;
+        }
+
+        .calendar-cell {
+            background-color: white;
+            min-height: 100px;
+            padding: 0.5rem;
+        }
+
+        .campaign-event {
+            margin-bottom: 0.25rem;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .campaign-event:hover {
+            transform: translateX(2px);
+        }
+
+        .campaign-title {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body class="bg-white">
+    <div class="container mx-auto p-6">
+        <!-- Header con logo -->
+        <div class="flex items-center mb-6 bg-white">
+            <img src="img/regione-lombardia.jpg" 
+                 alt="Logo Regione Lombardia" 
+                 class="h-12 w-auto object-contain mr-4">
+            <div class="border-l border-gray-300 h-8 mx-4"></div>
+            <h1 class="text-3xl font-bold text-gray-800">Calendario Campagne Social</h1>
+        </div>
+        
+        <!-- Tab Navigation -->
+        <div class="flex justify-between items-center mb-6">
+            <div class="space-x-3">
+                <button data-tab="campaigns" 
+                        class="tab-button px-6 py-3 bg-[#006B4F] text-white rounded-lg shadow-sm hover:bg-[#005940] transition-colors">
+                    <i class="fas fa-list mr-2"></i>Campagne
+                </button>
+                <button data-tab="calendar" 
+                        class="tab-button px-6 py-3 bg-gray-500 text-white rounded-lg shadow-sm hover:bg-gray-600 transition-colors">
+                    <i class="fas fa-calendar-alt mr-2"></i>Calendario
+                </button>
+            </div>
+            <div id="actionButton">
+                <button onclick="toggleNewCampaign()" 
+                        class="px-6 py-3 bg-[#006B4F] text-white rounded-lg shadow-sm hover:bg-[#005940] transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Nuova Campagna
+                </button>
+            </div>
+        </div>
+
+        <!-- Campaigns Tab (Form + List) -->
+        <div id="campaignsTab">
+            <!-- Form (collapsible) -->
+            <div id="campaignForm" class="hidden mb-6">
+                <div class="bg-white p-8 rounded-lg shadow-sm">
+                    <form onsubmit="saveCampaign(event)">
+                <div class="grid gap-4">
+                    <input type="text" id="title" placeholder="Titolo campagna" required
+                                   class="form-input border p-3 rounded-lg w-full focus:outline-none focus:border-blue-500">
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm text-gray-600 mb-2">Anteprima Post</label>
+                                <input type="file" id="thumbnail" accept="image/*" 
+                                       class="border p-2 rounded w-full"
+                                       onchange="handleThumbnailUpload(event)">
+                                <div id="thumbnailPreview" class="mt-2 hidden">
+                                    <img id="previewImage" class="max-h-32 rounded">
+                                </div>
+                            </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="date" id="startDate" required class="border p-2 rounded">
+                        <input type="date" id="endDate" required class="border p-2 rounded">
+                    </div>
+
+                            <input type="text" id="type" placeholder="Tipo campagna" required class="border p-2 rounded">
+
+                    <select id="channel" required class="border p-2 rounded">
+                        <option value="">Seleziona canale</option>
+                        <option value="Instagram">Instagram</option>
+                        <option value="Facebook">Facebook</option>
+                        <option value="LinkedIn">LinkedIn</option>
+                        <option value="Twitter">Twitter</option>
+                        <option value="YouTube">YouTube</option>
+                    </select>
+
+                    <div class="mb-4">
+                        <label class="block text-sm text-gray-600 mb-2">Link Campagna</label>
+                        <input type="url" 
+                               id="link" 
+                               name="link" 
+                               placeholder="Link alla campagna (opzionale)"
+                               class="form-input border p-3 rounded-lg w-full focus:outline-none focus:border-blue-500">
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" id="isDark" class="mr-2">
+                        <label for="isDark">Campagna Dark</label>
+                    </div>
+
+                    <button type="submit" class="bg-green-500 text-white py-2 px-4 rounded">
+                        Salva Campagna
+                    </button>
+                </div>
+            </form>
+                </div>
+        </div>
+
+            <!-- Campaigns List (always visible in this tab) -->
+            <div id="campaignsList" class="space-y-4"></div>
+        </div>
+
+        <!-- Calendar Tab -->
+        <div id="calendarTab" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <div id="currentMonth" class="text-2xl font-bold"></div>
+            </div>
+            <div id="calendar" class="grid grid-cols-7 gap-1"></div>
+        </div>
+    </div>
+
+    <script>
+    // Funzione per gestire il token
+    function initGitHub() {
+        const savedToken = localStorage.getItem('github_token');
+        if (!savedToken) {
+            const token = prompt('Inserisci il tuo GitHub token:');
+            if (token) {
+                localStorage.setItem('github_token', token);
+                return token;
+            }
+            return '';
+        }
+        return savedToken;
+    }
+
+    // Configurazione GitHub
+    const GITHUB_TOKEN = initGitHub();
+    const GIST_ID = '19150d88db1d0dc544346730204d27a5';
+    const octokit = new Octokit({ auth: GITHUB_TOKEN });
+
+    let campaigns = [];
+    let currentDate = new Date();
+
+    // Funzione per caricare i dati all'avvio
+    async function loadCampaigns() {
+        try {
+            const response = await octokit.request('GET /gists/{gist_id}', {
+                gist_id: GIST_ID
+            });
+            
+            const content = response.data.files['campaigns.json'].content;
+            const data = JSON.parse(content);
+            campaigns = data.campaigns || [];
+            renderCampaigns();
+            renderCalendar();
+        } catch (error) {
+            console.error('Errore nel caricamento:', error);
+        }
+    }
+
+    // Aggiungi l'inizializzazione
+    window.addEventListener('DOMContentLoaded', loadCampaigns);
+
+    // Funzioni principali
+    async function saveCampaign(event) {
+        event.preventDefault();
+        const form = event.target;
+        const previewImage = document.getElementById('previewImage');
+        
+        try {
+            const campaign = {
+                id: Date.now(),
+                title: form.title.value,
+                thumbnail: previewImage?.src || '',
+                startDate: form.startDate.value,
+                endDate: form.endDate.value,
+                type: form.type.value,
+                channel: form.channel.value,
+                isDark: form.isDark.checked,
+                link: form.link.value
+            };
+
+            // Aggiungi al array locale
+            campaigns.push(campaign);
+            
+            // Salva su GitHub Gist
+            await saveToGist(campaigns);
+            
+            // Aggiorna UI
+            renderCampaigns();
+            renderCalendar();
+            
+            // Reset form
+            form.reset();
+            document.getElementById('campaignForm').classList.add('hidden');
+            document.getElementById('thumbnailPreview').classList.add('hidden');
+        } catch (error) {
+            console.error('Errore nel salvataggio:', error);
+            alert('Errore nel salvataggio. Riprova più tardi.');
+        }
+    }
+
+    // Funzione per salvare su Gist
+    async function saveToGist(data) {
+        try {
+            const content = JSON.stringify(data);
+            const gistId = localStorage.getItem('campaignsGistId');
+            
+            if (gistId) {
+                // Aggiorna Gist esistente
+                await octokit.request('PATCH /gists/{gist_id}', {
+                    gist_id: gistId,
+                    files: {
+                        'campaigns.json': {
+                            content: content
+                        }
+                    }
+                });
+            } else {
+                // Crea nuovo Gist
+                const response = await octokit.request('POST /gists', {
+                    files: {
+                        'campaigns.json': {
+                            content: content
+                        }
+                    },
+                    description: 'Calendario Campagne Social',
+                    public: false
+                });
+                localStorage.setItem('campaignsGistId', response.data.id);
+            }
+        } catch (error) {
+            throw new Error('Errore nel salvataggio su GitHub: ' + error.message);
+        }
+    }
+
+    // Funzione per condividere
+    async function shareCalendar() {
+        try {
+            const shareData = {
+                campaigns,
+                currentMonth: {
+                    year: currentDate.getFullYear(),
+                    month: currentDate.getMonth()
+                },
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+            };
+
+            // Crea un nuovo Gist per la condivisione
+            const response = await octokit.request('POST /gists', {
+                files: {
+                    'shared_calendar.json': {
+                        content: JSON.stringify(shareData)
+                    }
+                },
+                description: 'Calendario Campagne Social - Condivisione',
+                public: true
+            });
+
+            const shareUrl = `${window.location.origin}/share.html?id=${response.data.id}`;
+            await navigator.clipboard.writeText(shareUrl);
+            alert('Link di condivisione copiato negli appunti!\n\nIl link scadrà tra 7 giorni.');
+        } catch (error) {
+            console.error('Errore nella condivisione:', error);
+            alert('Errore nella creazione del link. Riprova più tardi.');
+        }
+    }
+    </script>
+</body>
+</html>
