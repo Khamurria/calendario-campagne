@@ -298,13 +298,17 @@
         }
     }
 
-    async function loadFromGist() {
+    async function loadCampaigns() {
         try {
             const token = getGitHubToken();
             const response = await github.get(`/gists/${GIST_ID}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            return JSON.parse(response.data.files['calendar_data.json'].content);
+            const fileContent = response.data.files['shared_calendar.json']?.content;
+            if (!fileContent) {
+                return { campaigns: [] };
+            }
+            return JSON.parse(fileContent);
         } catch (error) {
             console.error('Errore nel caricamento:', error);
             throw new Error('Errore nel caricamento dei dati');
@@ -335,7 +339,7 @@
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            const shareUrl = `${window.location.origin}/share.html?id=${response.data.id}`;
+            const shareUrl = `${window.location.href.replace('index.html', '')}share.html?id=${response.data.id}`;
             await navigator.clipboard.writeText(shareUrl);
             alert('Link di condivisione copiato negli appunti!\n\nIl link scadrà tra 7 giorni.');
         } catch (error) {
@@ -535,7 +539,7 @@
     // Caricamento iniziale
     async function initCalendar() {
         try {
-            const data = await loadFromGist();
+            const data = await loadCampaigns();
             campaigns = data.campaigns || [];
             renderCalendar();
             renderCampaigns();
@@ -545,8 +549,38 @@
         }
     }
 
-    // Inizializzazione al caricamento della pagina
-    window.addEventListener('DOMContentLoaded', initCalendar);
+    // Dopo initCalendar()
+    function initTabs() {
+        const defaultTab = document.querySelector('[data-tab="calendar"]');
+        if (defaultTab) {
+            defaultTab.classList.remove('bg-gray-500');
+            defaultTab.classList.add('bg-[#006B4F]');
+        }
+        
+        document.querySelectorAll('[data-tab]').forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+                
+                // Aggiorna stile pulsanti
+                document.querySelectorAll('[data-tab]').forEach(btn => {
+                    btn.classList.remove('bg-[#006B4F]');
+                    btn.classList.add('bg-gray-500');
+                });
+                button.classList.remove('bg-gray-500');
+                button.classList.add('bg-[#006B4F]');
+                
+                // Mostra/nascondi contenuto
+                document.getElementById('campaignsTab').classList.toggle('hidden', tabId !== 'campaigns');
+                document.getElementById('calendarTab').classList.toggle('hidden', tabId !== 'calendar');
+            });
+        });
+    }
+
+    // Modifica l'event listener
+    window.addEventListener('DOMContentLoaded', () => {
+        initCalendar();
+        initTabs();
+    });
 
     // Utility
     function showError(message) {

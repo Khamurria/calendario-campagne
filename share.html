@@ -136,6 +136,11 @@
             return savedToken;
         }
 
+        // Utility functions
+        function showError(message) {
+            alert(message);
+        }
+
         // Caricamento dati condivisi
         async function loadSharedData() {
             try {
@@ -151,8 +156,11 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                const content = response.data.files['shared_calendar.json'].content;
-                const shareData = JSON.parse(content);
+                const fileContent = response.data.files['shared_calendar.json']?.content;
+                if (!fileContent) {
+                    throw new Error('Dati non trovati');
+                }
+                const shareData = JSON.parse(fileContent);
 
                 // Verifica scadenza
                 if (new Date(shareData.expiresAt) < new Date()) {
@@ -289,11 +297,6 @@
                 
                 list.appendChild(row);
             });
-        }
-
-        // Funzione per mostrare errori
-        function showError(message) {
-            alert(message); // Per ora usiamo un semplice alert
         }
     </script>
 </body>
