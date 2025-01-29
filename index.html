@@ -249,10 +249,9 @@
             </form>
         </div>
 
-        <!-- Viste -->
+        <!-- Vista Calendario -->
         <div id="calendarView" class="hidden">
             <div class="bg-gray-50 rounded-lg shadow-sm p-6 mb-8">
-                <!-- Contenuto del calendario -->
                 <div class="flex justify-between items-center mb-6">
                     <button onclick="prevMonth()" class="px-4 py-2 bg-[#006B4F] text-white rounded-lg hover:bg-[#005940]">
                         <i class="fas fa-chevron-left"></i>
@@ -266,11 +265,24 @@
             </div>
         </div>
 
+        <!-- Vista Lista -->
         <div id="listView">
-            <!-- Lista campagne -->
             <div class="bg-gray-50 rounded-lg shadow-sm p-6">
                 <h2 class="text-xl font-bold mb-6 text-gray-800">Elenco Campagne</h2>
-                <div id="campaignsList"></div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-white">
+                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Campagna</th>
+                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Link</th>
+                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Periodo</th>
+                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Tipo</th>
+                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Canale</th>
+                            </tr>
+                        </thead>
+                        <tbody id="campaignsList" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -408,7 +420,7 @@
         }
     }
 
-    // Nuova funzione per gestire le viste
+    // Funzione per gestire il cambio di vista
     function toggleView(view) {
         const calendarView = document.getElementById('calendarView');
         const listView = document.getElementById('listView');
