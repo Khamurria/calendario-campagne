@@ -130,6 +130,7 @@
         // Variabili globali
         let campaigns = [];
         let currentDate = new Date();
+        let sharedData = null;
 
         // Colori canali social
         const channelColors = {
@@ -144,9 +145,7 @@
         // Configurazione axios
         const github = axios.create({
             baseURL: 'https://api.github.com',
-            headers: {
-                'Accept': 'application/vnd.github.v3+json'
-            }
+            headers: { 'Accept': 'application/vnd.github.v3+json' }
         });
 
         // Funzioni base
@@ -168,12 +167,12 @@
 
         // Funzioni di navigazione
         function prevMonth() {
-            currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1);
+            currentDate.setMonth(currentDate.getMonth() - 1);
             renderCalendar();
         }
 
         function nextMonth() {
-            currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1);
+            currentDate.setMonth(currentDate.getMonth() + 1);
             renderCalendar();
         }
 
@@ -286,55 +285,111 @@
             `).join('');
         }
 
-        // Caricamento dati
+        // Caricamento dati condivisi
         async function loadSharedData() {
             try {
-                const token = getGitHubToken();
-                if (!token) {
-                    throw new Error('Token GitHub non valido');
-                }
-
                 const urlParams = new URLSearchParams(window.location.search);
                 const gistId = urlParams.get('id');
                 
                 if (!gistId) {
-                    throw new Error('ID condivisione non valido');
+                    throw new Error('ID condivisione mancante');
                 }
 
-                const response = await github.get(`/gists/${gistId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
+                const response = await github.get(`/gists/${gistId}`);
                 const fileContent = response.data.files['shared_calendar.json']?.content;
+                
                 if (!fileContent) {
                     throw new Error('Dati non trovati');
                 }
 
-                const shareData = JSON.parse(fileContent);
-                campaigns = shareData.campaigns || [];
-                
-                if (shareData.currentMonth) {
-                    currentDate = new Date(shareData.currentMonth.year, shareData.currentMonth.month);
+                sharedData = JSON.parse(fileContent);
+
+                // Verifica scadenza
+                if (new Date(sharedData.expiresAt) < new Date()) {
+                    throw new Error('Link di condivisione scaduto');
                 }
-                
+
+                // Carica i dati
+                campaigns = sharedData.campaigns || [];
+                if (sharedData.currentMonth) {
+                    currentDate = new Date(
+                        sharedData.currentMonth.year, 
+                        sharedData.currentMonth.month
+                    );
+                }
+
+                // Aggiorna le viste
                 renderCalendar();
                 renderCampaigns();
-                console.log('Dati caricati con successo:', {
-                    campaigns: campaigns.length,
-                    currentDate: currentDate.toISOString()
-                });
+
+                // Mostra info condivisione
+                showSharingInfo();
             } catch (error) {
                 console.error('Errore nel caricamento:', error);
-                showError('Non è stato possibile caricare i dati. Riprova più tardi.');
-                renderCalendar();
-                renderCampaigns();
+                showError(error.message || 'Errore nel caricamento dei dati');
             }
+        }
+
+        // Mostra informazioni sulla condivisione
+        function showSharingInfo() {
+            if (!sharedData) return;
+
+            const sharedAt = new Date(sharedData.sharedAt);
+            const expiresAt = new Date(sharedData.expiresAt);
+            const daysLeft = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24));
+
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'bg-blue-50 border-l-4 border-blue-500 p-4 mb-4';
+            infoDiv.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                    <div>
+                        <p class="text-sm">
+                            Calendario condiviso il ${sharedAt.toLocaleDateString()}
+                            <br>
+                            Scade tra ${daysLeft} giorni (${expiresAt.toLocaleDateString()})
+                        </p>
+                    </div>
+                </div>
+            `;
+
+            const container = document.querySelector('.container');
+            container.insertBefore(infoDiv, container.firstChild);
+        }
+
+        // Sistema di notifiche migliorato
+        function createNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg ${
+                type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+            } text-white max-w-md z-50 transform transition-all duration-300 translate-y-0`;
+            
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-3"></i>
+                    <p>${message}</p>
+                </div>
+            `;
+
+            document.body.appendChild(notification);
+
+            requestAnimationFrame(() => {
+                notification.style.transform = 'translateY(0)';
+            });
+
+            setTimeout(() => {
+                notification.style.transform = 'translateY(-100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function showError(message) {
+            createNotification(message, 'error');
         }
 
         // Inizializzazione
         window.addEventListener('DOMContentLoaded', () => {
-            renderCalendar();  // Mostra calendario vuoto
-            loadSharedData(); // Carica i dati
+            loadSharedData();
         });
     </script>
 </body>
