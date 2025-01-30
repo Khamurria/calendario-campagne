@@ -36,13 +36,15 @@
         }
 
         .campaign-event {
-            padding: 3px 6px;
-            margin-bottom: 3px;
+            padding: 4px 8px;
+            margin-bottom: 4px;
             border-radius: 4px;
             font-size: 0.75rem;
-            line-height: 1.3;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.4;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             letter-spacing: 0.01em;
+            cursor: default;
+            transition: background-color 0.2s ease;
         }
 
         .campaign-event:hover {
@@ -78,19 +80,13 @@
             display: block;
             overflow: hidden;
             text-overflow: ellipsis;
-            font-weight: 500;
+            white-space: nowrap;
         }
 
-        .campaign-event a {
+        .campaign-event a:not(.link-style) {
             color: inherit;
             text-decoration: none;
-            border-bottom: 1px dotted currentColor;
-            cursor: pointer;
-        }
-
-        .campaign-event a:hover {
-            opacity: 0.9;
-            border-bottom-style: solid;
+            cursor: default;
         }
 
         /* Stili per lo scrolling elegante */
@@ -110,6 +106,28 @@
         .overflow-y-auto::-webkit-scrollbar-thumb {
             background-color: rgba(0,0,0,0.2);
             border-radius: 2px;
+        }
+
+        /* Stile specifico per il link */
+        .link-style {
+            color: #2563eb; /* Blu */
+            text-decoration: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            font-weight: 500;
+        }
+
+        .link-style:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+
+        /* Stile per il punto dark */
+        .dark-dot {
+            color: #000000;
+            font-size: 1.2em;
+            line-height: 1;
+            vertical-align: middle;
         }
     </style>
 </head>
@@ -304,20 +322,19 @@
                     dayEvents.forEach(campaign => {
                         const eventDiv = document.createElement('div');
                         eventDiv.className = 'campaign-event text-xs';
-                        eventDiv.style.backgroundColor = `${channelColors[campaign.channel]}20`;
-                        eventDiv.style.color = channelColors[campaign.channel];
+                        eventDiv.style.backgroundColor = `${channelColors[campaign.channel]}15`;
                         
-                        // Crea una singola riga con tutti i dettagli
-                        const details = [
-                            campaign.title,
-                            campaign.type,
-                            campaign.link ? `<a href="${campaign.link}" target="_blank" class="underline hover:opacity-80">link</a>` : '',
-                            campaign.isDark ? '•' : ''
-                        ].filter(Boolean).join(' | ');
+                        const titleAndType = `${campaign.title} | ${campaign.type}`;
+                        const linkPart = campaign.link ? `| <a href="${campaign.link}" target="_blank" class="link-style">link</a>` : '';
+                        const darkPart = campaign.isDark ? ' | <span class="dark-dot">•</span>' : '';
 
-                        // Rimuovi la classe cursor-pointer dall'evento
-                        eventDiv.className = 'campaign-event text-xs';
-                        eventDiv.innerHTML = `<div class="campaign-line">${details}</div>`;
+                        eventDiv.innerHTML = `
+                            <div class="campaign-line text-gray-900">
+                                <span class="font-medium">${titleAndType}</span>
+                                ${linkPart}
+                                ${darkPart}
+                            </div>
+                        `;
                         
                         eventsContainer.appendChild(eventDiv);
                     });
