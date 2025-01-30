@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://api.github.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:;">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,">
     <title>Calendario Campagne Social</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
@@ -251,7 +252,7 @@
         :root {
             --instagram-color: #E4405F;     /* Rosa acceso */
             --facebook-color: #4267B2;      /* Blu Facebook classico */
-            --linkedin-color: #2DB67D;      /* Verde smeraldo */
+            --linkedin-color: #0A66C2;      /* Nuovo blu LinkedIn più scuro e visibile */
             --twitter-color: #1DA1F2;       /* Azzurro cielo */
             --youtube-color: #FF0000;       /* Rosso brillante */
             --tiktok-color: #69C9D0;        /* Turchese */
@@ -1024,6 +1025,10 @@
             const thumbnailFile = form.thumbnail.files[0];
             if (thumbnailFile) {
                 thumbnail = await handleImageUpload(thumbnailFile);
+            } else if (form.dataset.editId) {
+                // Mantieni la thumbnail esistente se stiamo modificando
+                const existingCampaign = campaigns.find(c => c.id === form.dataset.editId);
+                thumbnail = existingCampaign?.thumbnail;
             }
             
             const campaign = {
@@ -1038,26 +1043,35 @@
                 thumbnail: thumbnail
             };
 
-            // Chiudi subito la finestra
-            toggleNewCampaign();
-
             if (form.dataset.editId) {
+                // Modifica: sostituisci la campagna esistente
                 const index = campaigns.findIndex(c => c.id === form.dataset.editId);
                 if (index !== -1) {
                     campaigns[index] = campaign;
                 }
             } else {
-            campaigns.push(campaign);
+                // Nuova campagna
+                campaigns.push(campaign);
             }
             
             await saveCampaigns();
+            
+            // Reset del form e dello stato
             form.reset();
             delete form.dataset.editId;
+            document.getElementById('thumbnailPreview').classList.add('hidden');
+            document.getElementById('uploadButton').classList.remove('hidden');
             
+            // Chiudi il form
+            toggleNewCampaign();
+            
+            // Aggiorna le visualizzazioni
             renderCampaigns();
             renderCalendar();
-            } catch (error) {
-                console.error('Errore nel salvataggio:', error);
+            
+            showSuccess('Campagna salvata con successo');
+        } catch (error) {
+            console.error('Errore nel salvataggio:', error);
             showError('Errore nel salvataggio della campagna');
         }
     }
@@ -1167,62 +1181,66 @@
 
         function renderCampaigns() {
             const list = document.getElementById('campaignsList');
-        if (!list) return;
-        
-        list.innerHTML = campaigns.map(campaign => `
-            <tr class="hover:bg-gray-50 transition-colors">
-                <td class="px-6 py-4">
-                    <div class="flex items-center">
-                        ${campaign.thumbnail ? 
-                            `<img src="${campaign.thumbnail}" 
-                                 alt="${campaign.title}" 
-                                 class="w-12 h-12 rounded-lg object-cover mr-3">` : 
-                            `<div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center mr-3">
-                                <i class="fas fa-image text-gray-400"></i>
-                             </div>`
-                        }
-                        <div>
-                            <div class="font-medium text-gray-900">${campaign.title}</div>
-                            <div class="text-sm text-gray-500">${campaign.type}</div>
+            if (!list) return;
+            
+            list.innerHTML = campaigns.map(campaign => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            ${campaign.thumbnail ? 
+                                `<img src="${campaign.thumbnail}" 
+                                     alt="${campaign.title}" 
+                                     class="w-12 h-12 rounded-lg object-cover mr-3">` : 
+                                `<div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center mr-3">
+                                    <i class="fas fa-image text-gray-400"></i>
+                                 </div>`
+                            }
+                            <div>
+                                <div class="font-medium text-gray-900">${campaign.title}</div>
+                                <div class="text-sm text-gray-500">${campaign.type}</div>
+                            </div>
                         </div>
-                                        </div>
-                                    </td>
-                <td class="px-6 py-4">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                          style="background-color: ${channelColors[campaign.channel]}20; color: ${channelColors[campaign.channel]}">
-                        <i class="fas ${getChannelIcon(campaign.channel)} mr-1"></i>
-                                            ${campaign.channel}
-                                        </span>
-                                    </td>
-                <td class="py-3 px-4">
-                    <div class="flex items-center">
-                        <i class="far fa-calendar-alt mr-2 text-gray-400"></i>
-                        ${formatDate(campaign.startDate)} - ${formatDate(campaign.endDate)}
-                    </div>
-                                    </td>
-                <td class="py-3 px-4 text-center">
-                    ${campaign.isDark ? '<i class="fas fa-circle text-gray-900"></i>' : ''}
-                                    </td>
-                <td class="py-3 px-4">
-                    ${campaign.link ? `
-                        <a href="${campaign.link}" target="_blank" class="text-blue-600 hover:text-blue-800">
-                            <i class="fas fa-external-link-alt mr-1"></i>Link
-                        </a>
-                    ` : '-'}
-                </td>
-                <td class="py-3 px-4 text-right space-x-2">
-                    <button onclick="editCampaign('${campaign.id}')" 
-                            class="text-blue-600 hover:text-blue-800">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                    <button onclick="deleteCampaign('${campaign.id}')" 
-                            class="text-red-600 hover:text-red-800">
-                        <i class="fas fa-trash-alt"></i>
-                        </button>
-                                    </td>
-                                </tr>
-        `).join('');
-    }
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            <i class="far fa-calendar-alt mr-2 text-gray-400"></i>
+                            ${formatDate(campaign.startDate)} - ${formatDate(campaign.endDate)}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-gray-700">${campaign.type}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                              style="background-color: ${channelColors[campaign.channel]}20; color: ${channelColors[campaign.channel]}">
+                            ${campaign.channel}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        ${campaign.isDark ? '<i class="fas fa-circle text-gray-900"></i>' : ''}
+                    </td>
+                    <td class="px-6 py-4">
+                        ${campaign.link ? `
+                            <a href="${campaign.link}" target="_blank" class="text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-external-link-alt mr-1"></i>Link
+                            </a>
+                        ` : '-'}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex justify-end space-x-2">
+                            <button onclick="editCampaign('${campaign.id}')" 
+                                    class="text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteCampaign('${campaign.id}')" 
+                                    class="text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
 
     // Funzioni helper per la formattazione
     function getChannelIcon(channel) {
@@ -1278,35 +1296,46 @@
     async function shareCalendar() {
         try {
             const token = getGitHubToken();
-            if (!token) throw new Error('Token GitHub non valido');
+            if (!token) {
+                showError('Token GitHub non trovato');
+                return;
+            }
 
-            // Correzione dell'endpoint API
-            const response = await axios.post('https://api.github.com/gists', {
-                description: 'Calendario Campagne Social - Condivisione Temporanea',
-                public: false,
-                files: {
-                    'shared_calendar.json': {
-                        content: JSON.stringify({
-                            campaigns: campaigns,
-                            currentMonth: {
-                                year: currentDate.getFullYear(),
-                                month: currentDate.getMonth()
-                            },
-                            sharedAt: new Date().toISOString(),
-                            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-                        })
+            const response = await axios({
+                method: 'POST',
+                url: 'https://api.github.com/gists',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                data: {
+                    description: 'Calendario Campagne Social - Condivisione Temporanea',
+                    public: false,
+                    files: {
+                        'shared_calendar.json': {
+                            content: JSON.stringify({
+                                campaigns: campaigns,
+                                currentMonth: {
+                                    year: currentDate.getFullYear(),
+                                    month: currentDate.getMonth()
+                                },
+                                sharedAt: new Date().toISOString(),
+                                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+                            })
+                        }
                     }
                 }
-            }, {
-                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             const shareUrl = `${window.location.origin}/share.html?id=${response.data.id}`;
             
-            // Copia l'URL negli appunti
-            await navigator.clipboard.writeText(shareUrl);
-            
-            showSuccess('Link di condivisione copiato negli appunti! Il link scadrà tra 7 giorni.');
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                showSuccess('Link di condivisione copiato negli appunti! Il link scadrà tra 7 giorni.');
+            } catch (clipboardError) {
+                // Fallback se la copia negli appunti fallisce
+                showSuccess(`Link di condivisione: ${shareUrl}\nIl link scadrà tra 7 giorni.`);
+            }
         } catch (error) {
             console.error('Errore nella condivisione:', error);
             showError('Errore nella creazione del link di condivisione');
