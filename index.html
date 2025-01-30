@@ -1188,7 +1188,7 @@
             if (!list) return;
             
             list.innerHTML = campaigns.map(campaign => `
-                <tr class="hover:bg-gray-50 transition-colors">
+                <tr class="hover:bg-gray-50 transition-colors" data-campaign-id="${campaign.id}">
                     <td class="px-6 py-4">
                         <div class="flex items-center">
                             ${campaign.thumbnail ? 
@@ -1231,11 +1231,11 @@
                     <td class="px-6 py-4 text-right">
                         <div class="flex justify-end space-x-3">
                             <button onclick="editCampaign('${campaign.id}')" 
-                                    class="text-blue-600 hover:text-blue-800">
+                                    class="text-blue-600 hover:text-blue-800 transition-colors">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button onclick="deleteCampaign('${campaign.id}')" 
-                                    class="text-red-600 hover:text-red-800">
+                                    class="text-red-600 hover:text-red-800 transition-colors">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
@@ -1360,7 +1360,8 @@
     }
 
     // Funzione per modificare una campagna
-    async function editCampaign(id) {
+    function editCampaign(id) {
+        console.log('Modifica campagna:', id); // Debug
         const campaign = campaigns.find(c => c.id === id);
         if (!campaign) {
             console.error('Campagna non trovata:', id);
@@ -1400,10 +1401,15 @@
         }
 
         form.dataset.editId = id;
-        toggleNewCampaign();
         
+        // Aggiorna il testo del pulsante
         const submitButton = form.querySelector('button[type="submit"]');
-        submitButton.textContent = 'Modifica Campagna';
+        if (submitButton) {
+            submitButton.textContent = 'Modifica Campagna';
+        }
+
+        // Apri il form
+        toggleNewCampaign();
     }
 
     // Debug mode
