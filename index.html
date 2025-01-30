@@ -821,27 +821,46 @@
     }
 
     // Gestione campagne
-    async function saveCampaign(event) {
-        event.preventDefault();
-        const form = event.target;
+    async function saveCampaign(e) {
+        e.preventDefault();
+        const form = e.target;
+        
+        // Controlla se stiamo modificando una campagna esistente
+        const editId = form.dataset.editId;
         
         try {
             const campaign = {
-                id: Date.now(),
+                id: editId || Date.now().toString(),
                 title: form.title.value,
-                startDate: form.startDate.value,
-                endDate: form.endDate.value,
                 type: form.type.value,
                 channel: form.channel.value,
+                startDate: form.startDate.value,
+                endDate: form.endDate.value,
                 link: form.link.value,
                 isDark: form.isDark.checked,
                 thumbnail: form.thumbnail.files[0] ? await resizeImage(form.thumbnail.files[0]) : null
             };
 
-            campaigns.push(campaign);
+            if (editId) {
+                // Modifica campagna esistente
+                const index = campaigns.findIndex(c => c.id === editId);
+                if (index !== -1) {
+                    campaigns[index] = campaign;
+                }
+            } else {
+                // Nuova campagna
+                campaigns.push(campaign);
+            }
+
             await saveCampaigns();
             
             form.reset();
+            // Rimuovi l'ID di modifica
+            delete form.dataset.editId;
+            // Ripristina il testo del pulsante
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.textContent = 'Crea Campagna';
+            
             toggleNewCampaign();
             renderCampaigns();
             renderCalendar();
@@ -978,12 +997,12 @@
                     ` : '-'}
                 </td>
                 <td class="py-3 px-4 text-right space-x-2">
-                    <button onclick="editCampaign(${campaign.id})" 
-                            class="text-blue-600 hover:text-blue-800 p-1">
+                    <button onclick="editCampaign('${campaign.id}')" 
+                            class="text-blue-600 hover:text-blue-800">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button onclick="deleteCampaign(${campaign.id})" 
-                            class="text-red-600 hover:text-red-800 p-1">
+                    <button onclick="deleteCampaign('${campaign.id}')" 
+                            class="text-red-600 hover:text-red-800">
                         <i class="fas fa-trash-alt"></i>
                     </button>
                 </td>
@@ -1147,6 +1166,32 @@
             };
             reader.readAsDataURL(file);
         });
+    }
+
+    // Funzione per modificare una campagna
+    async function editCampaign(id) {
+        const campaign = campaigns.find(c => c.id === id);
+        if (!campaign) return;
+        
+        // Popola il form con i dati della campagna
+        const form = document.getElementById('campaignForm');
+        form.title.value = campaign.title;
+        form.type.value = campaign.type;
+        form.channel.value = campaign.channel;
+        form.startDate.value = campaign.startDate;
+        form.endDate.value = campaign.endDate;
+        form.link.value = campaign.link || '';
+        form.isDark.checked = campaign.isDark || false;
+        
+        // Aggiungi l'ID della campagna come attributo nascosto
+        form.dataset.editId = id;
+        
+        // Mostra il form
+        toggleNewCampaign();
+        
+        // Cambia il testo del pulsante
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.textContent = 'Modifica Campagna';
     }
     </script>
 </body>
