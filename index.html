@@ -146,16 +146,51 @@
         }
 
         .btn-primary {
-            @apply px-4 py-2 bg-[#006B4F] text-white rounded-lg hover:bg-[#005940] transition-colors;
+            padding: 0.5rem 1rem;
+            background-color: #006B4F;
+            color: white;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
         }
+        .btn-primary:hover {
+            background-color: #005940;
+        }
+
         .btn-secondary {
-            @apply px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors;
+            padding: 0.5rem 1rem;
+            background-color: #4B5563;
+            color: white;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
         }
+        .btn-secondary:hover {
+            background-color: #374151;
+        }
+
         .form-input {
-            @apply w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#006B4F] focus:border-[#006B4F];
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
         }
+        .form-input:focus {
+            outline: none;
+            border-color: #006B4F;
+            box-shadow: 0 0 0 2px rgba(0, 107, 79, 0.2);
+        }
+
         .form-select {
-            @apply w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#006B4F] focus:border-[#006B4F];
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+        .form-select:focus {
+            outline: none;
+            border-color: #006B4F;
+            box-shadow: 0 0 0 2px rgba(0, 107, 79, 0.2);
         }
 
         .fade-enter {
@@ -544,10 +579,12 @@
     </main>
 
     <script>
+    // Definisci il GIST_ID come costante
+    const GIST_ID = '19150d88db1d0dc544346730204d27a5';
+    
     // Variabili globali
     let campaigns = [];
     let currentDate = new Date();
-    const GIST_ID = '19150d88db1d0dc544346730204d27a5';
 
     // Configurazione colori canali social
         const channelColors = {
@@ -662,12 +699,12 @@
         }, 3000);
     }
 
-    function showSuccess(message) {
-        createNotification(message, 'success');
-    }
-
     function showError(message) {
         createNotification(message, 'error');
+    }
+
+    function showSuccess(message) {
+        createNotification(message, 'success');
     }
 
     // Funzioni base
@@ -678,13 +715,36 @@
     // Funzioni GitHub
     async function loadCampaigns() {
         try {
-            const gistId = window.localStorage.getItem('calendarGistId');
-            if (!gistId) return;
+            const token = getGitHubToken();
+            console.log('Loading campaigns with token:', !!token);
+            
+            if (!token) {
+                showError('Token GitHub non trovato');
+                return;
+            }
 
-            const response = await axios.get(`https://api.github.com/gists/${gistId}`);
+            const gistId = localStorage.getItem('calendarGistId') || GIST_ID;
+            console.log('Using gistId:', gistId);
+            
+            const response = await axios.get(`https://api.github.com/gists/${gistId}`, {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            console.log('Gist loaded successfully');
+
+            if (!localStorage.getItem('calendarGistId')) {
+                localStorage.setItem('calendarGistId', gistId);
+                console.log('Saved gistId to localStorage');
+            }
+
             const content = JSON.parse(response.data.files['calendar_data.json'].content);
-
+            console.log('Parsed content:', content);
+            
             campaigns = content.campaigns || [];
+            console.log('Loaded campaigns:', campaigns.length);
+            
             if (content.currentMonth) {
                 currentDate = new Date(
                     content.currentMonth.year,
@@ -692,10 +752,10 @@
                 );
             }
 
-                renderCalendar();
+            renderCalendar();
             renderCampaigns();
-            } catch (error) {
-                console.error('Errore nel caricamento:', error);
+        } catch (error) {
+            console.error('Detailed error in loadCampaigns:', error);
             showError('Errore nel caricamento delle campagne');
         }
     }
@@ -1194,17 +1254,18 @@
     // Funzione di inizializzazione migliorata
     async function initializeApp() {
         const token = getGitHubToken();
-        
-        // Forza il render iniziale
-        renderCalendar();
+        console.log('Token presente:', !!token);
         
         if (!token || !(await validateToken(token))) {
+            console.log('Token non valido o mancante');
             openTokenSettings();
             return;
         }
         
         try {
+            console.log('Caricamento campagne...');
             await loadCampaigns();
+            console.log('Campagne caricate:', campaigns.length);
             renderCalendar();
             renderCampaigns();
         } catch (error) {
@@ -1314,6 +1375,10 @@
         }
     };
     window.debug = debug;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeApp();
+    });
     </script>
 </body>
 </html>
