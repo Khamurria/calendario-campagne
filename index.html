@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://api.github.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:;">
     <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,">
     <title>Calendario Campagne Social</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
@@ -269,6 +269,14 @@
                 transform: translateX(0);
                 opacity: 1;
             }
+        }
+
+        .channel-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
         }
     </style>
 </head>
@@ -746,7 +754,15 @@
             }
         } catch (error) {
             console.error('Errore nel salvataggio:', error);
-            showError('Errore nel salvataggio delle campagne');
+            if(error.response?.status === 401) {
+                showError('Token scaduto o non valido');
+                localStorage.removeItem('github_token');
+                openTokenSettings();
+            }
+            if(error.response?.status === 404) {
+                localStorage.removeItem('calendarGistId');
+                return await saveCampaigns();
+            }
             throw error;
         }
     }
@@ -990,19 +1006,31 @@
     function renderCalendar() {
         const calendar = document.getElementById('calendar');
         const monthTitle = document.getElementById('currentMonth');
-        if (!calendar || !monthTitle) return;
+        
+        // Aggiungi controllo null
+        if (!calendar || !monthTitle) {
+            console.error('Elementi del calendario non trovati!');
+            return;
+        }
 
-        // Aggiorna titolo mese e anno
-        const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
-                           'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
-        const month = monthNames[currentDate.getMonth()];
-        const year = currentDate.getFullYear();
-        monthTitle.textContent = `${month} ${year}`;
-
+        // FORMATTAZIONE CORRETTA DELLA DATA
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth(); // 0-11
+        
+        // Array mesi aggiornato
+        const monthNames = [
+            'Gennaio', 'Febbraio', 'Marzo', 'Aprile',
+            'Maggio', 'Giugno', 'Luglio', 'Agosto',
+            'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+        ];
+        
+        // Imposta il titolo subito
+        monthTitle.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+        
         calendar.innerHTML = '';
         
-        const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth + 1, 0);
         
         // Celle vuote iniziali
         for (let i = 0; i < firstDay.getDay(); i++) {
@@ -1023,7 +1051,9 @@
             cell.appendChild(dateDiv);
             
             // Eventi del giorno
-            const currentDateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            const currentYear = currentDate.getFullYear();
+            const currentMonth = currentDate.getMonth() + 1;
+            const currentDateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
             const dayEvents = campaigns.filter(campaign => {
                 return campaign.startDate <= currentDateStr && campaign.endDate >= currentDateStr;
             });
@@ -1164,7 +1194,11 @@
     // Funzione di inizializzazione migliorata
     async function initializeApp() {
         const token = getGitHubToken();
-        if (!token) {
+        
+        // Forza il render iniziale
+        renderCalendar();
+        
+        if (!token || !(await validateToken(token))) {
             openTokenSettings();
             return;
         }
@@ -1174,7 +1208,7 @@
             renderCalendar();
             renderCampaigns();
         } catch (error) {
-            console.error('Errore durante l\'inizializzazione:', error);
+            console.error('Errore inizializzazione:', error);
             showError('Errore nel caricamento dei dati');
         }
     }
@@ -1185,8 +1219,8 @@
             const token = getGitHubToken();
             if (!token) throw new Error('Token GitHub non valido');
 
-            // Crea un nuovo gist per la condivisione
-            const response = await axios.post('/gists', {
+            // Correzione dell'endpoint API
+            const response = await axios.post('https://api.github.com/gists', {
                 description: 'Calendario Campagne Social - Condivisione Temporanea',
                 public: false,
                 files: {
@@ -1198,7 +1232,7 @@
                                 month: currentDate.getMonth()
                             },
                             sharedAt: new Date().toISOString(),
-                            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 giorni
+                            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
                         })
                     }
                 }
@@ -1270,6 +1304,16 @@
         const submitButton = form.querySelector('button[type="submit"]');
         submitButton.textContent = 'Modifica Campagna';
     }
+
+    // Debug mode
+    const debug = {
+        logCampaigns: () => console.log('Campagne:', campaigns),
+        clearStorage: () => {
+            localStorage.clear();
+            console.log('Storage pulito');
+        }
+    };
+    window.debug = debug;
     </script>
 </body>
 </html>
