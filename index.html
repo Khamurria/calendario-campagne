@@ -424,9 +424,7 @@
                         <!-- Colonna destra -->
                         <div class="space-y-6">
                             <div class="space-y-2">
-                                <label class="block text-sm font-medium text-gray-700">
-                                    Miniatura
-                                </label>
+                                <label class="block text-sm font-medium text-gray-700">Miniatura</label>
                                 <div class="mt-1 flex items-center">
                                     <div id="thumbnailPreview" class="hidden w-32 h-32 mr-4 rounded-lg overflow-hidden bg-gray-100">
                                         <img src="" alt="Anteprima" class="w-full h-full object-cover">
@@ -733,8 +731,6 @@
                 });
                 window.localStorage.setItem('calendarGistId', response.data.id);
             }
-
-            showSuccess('Campagne salvate con successo');
         } catch (error) {
             console.error('Errore nel salvataggio:', error);
             showError('Errore nel salvataggio delle campagne');
@@ -1025,7 +1021,7 @@
                                 <i class="fas fa-image text-gray-400"></i>
                              </div>`
                         }
-                        <div>
+                        <div class="ml-3">
                             <div class="font-medium text-gray-900">${campaign.title}</div>
                         </div>
                     </div>
@@ -1042,9 +1038,8 @@
                     </span>
                 </td>
                 <td class="py-3 px-4">
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white"
-                          style="background-color: ${channelColors[campaign.channel]}">
-                        <i class="fas ${getChannelIcon(campaign.channel)} mr-1"></i>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                          style="background-color: ${channelColors[campaign.channel]}20; color: ${channelColors[campaign.channel]}">
                         ${campaign.channel}
                     </span>
                 </td>
@@ -1112,7 +1107,6 @@
             await loadCampaigns();
             renderCalendar();
             renderCampaigns();
-            showSuccess('Dati caricati con successo');
         } catch (error) {
             console.error('Errore durante l\'inizializzazione:', error);
             showError('Errore nel caricamento dei dati');
