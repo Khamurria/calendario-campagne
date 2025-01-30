@@ -29,33 +29,147 @@
         }
 
         .calendar-cell {
-            min-height: 100px;
-            max-height: 180px;
+            min-height: 120px;
+            max-height: 200px;
             transition: all 0.2s ease;
             overflow-y: auto;
+            background: #ffffff;
+            border: 1px solid #f0f0f0;
+        }
+
+        .calendar-cell:hover {
+            background-color: #fafafa;
+        }
+
+        .date-number {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.75rem;
+            padding: 0.25rem;
+            border-radius: 4px;
         }
 
         .campaign-event {
-            padding: 4px 8px;
-            margin-bottom: 4px;
-            border-radius: 4px;
+            padding: 6px 8px;
+            margin-bottom: 6px;
+            border-radius: 6px;
             font-size: 0.75rem;
             line-height: 1.4;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             letter-spacing: 0.01em;
             cursor: default;
-            transition: background-color 0.2s ease;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
         .campaign-event:hover {
-            transform: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
+
+        .campaign-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
 
         .campaign-title {
+            font-size: 0.8rem;
+            line-height: 1.3;
+            color: #111827;
+            font-weight: 600;
+            word-wrap: break-word;
+            hyphens: auto;
+        }
+
+        .campaign-details {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            font-size: 0.7rem;
+            color: #6B7280;
+            line-height: 1.2;
+        }
+
+        .type-label {
+            color: #4B5563;
+            font-weight: 500;
+        }
+
+        .link-style {
+            color: #2563eb;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
             font-weight: 500;
             white-space: nowrap;
+            padding: 1px 4px;
+            border-radius: 3px;
+            background-color: rgba(37, 99, 235, 0.1);
+        }
+
+        .link-style:hover {
+            background-color: rgba(37, 99, 235, 0.15);
+            color: #1d4ed8;
+        }
+
+        .dark-dot {
+            color: #000000;
+            font-size: 1.1em;
+            line-height: 1;
+            vertical-align: middle;
+        }
+
+        .mx-1 {
+            margin: 0 4px;
+        }
+
+        /* Stili per lo scrolling */
+        .overflow-y-auto {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,0,0,0.2) transparent;
+        }
+
+        .overflow-y-auto::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .overflow-y-auto::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+
+        /* Stili per l'header del calendario */
+        .calendar-header {
+            background-color: #f8fafc;
+            border-radius: 8px 8px 0 0;
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .calendar-grid {
+            border-radius: 0 0 8px 8px;
             overflow: hidden;
-            text-overflow: ellipsis;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .calendar-weekdays {
+            background-color: #f3f4f6;
+            font-weight: 600;
+            color: #4B5563;
+        }
+
+        .calendar-weekdays > div {
+            padding: 0.75rem;
+            text-align: center;
+            font-size: 0.875rem;
         }
 
         .campaign-type {
@@ -87,47 +201,6 @@
             color: inherit;
             text-decoration: none;
             cursor: default;
-        }
-
-        /* Stili per lo scrolling elegante */
-        .overflow-y-auto {
-            scrollbar-width: thin;
-            scrollbar-color: rgba(0,0,0,0.2) transparent;
-        }
-
-        .overflow-y-auto::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .overflow-y-auto::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .overflow-y-auto::-webkit-scrollbar-thumb {
-            background-color: rgba(0,0,0,0.2);
-            border-radius: 2px;
-        }
-
-        /* Stile specifico per il link */
-        .link-style {
-            color: #2563eb; /* Blu */
-            text-decoration: none;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            font-weight: 500;
-        }
-
-        .link-style:hover {
-            opacity: 0.8;
-            text-decoration: underline;
-        }
-
-        /* Stile per il punto dark */
-        .dark-dot {
-            color: #000000;
-            font-size: 1.2em;
-            line-height: 1;
-            vertical-align: middle;
         }
     </style>
 </head>
@@ -196,6 +269,7 @@
 
         <!-- Calendario esistente -->
         <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Visualizzazione Mensile</h3>
             <div class="flex justify-between items-center mb-6">
                 <button onclick="prevMonth()" class="text-gray-600 hover:text-gray-800">
                     <i class="fas fa-chevron-left text-xl"></i>
@@ -206,7 +280,7 @@
                 </button>
             </div>
             <div class="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
-                <div class="text-center py-2 bg-gray-50 font-medium text-gray-600">Dom</div>
+                <div class="text-center py-3 bg-gray-50 font-medium text-gray-600">Dom</div>
                 <div class="text-center py-2 bg-gray-50 font-medium text-gray-600">Lun</div>
                 <div class="text-center py-2 bg-gray-50 font-medium text-gray-600">Mar</div>
                 <div class="text-center py-2 bg-gray-50 font-medium text-gray-600">Mer</div>
