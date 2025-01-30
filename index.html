@@ -1095,7 +1095,7 @@
         // Celle vuote iniziali
         for (let i = 0; i < firstDay.getDay(); i++) {
             const emptyCell = document.createElement('div');
-            emptyCell.className = 'bg-white p-4 min-h-[120px] border-b border-r border-gray-200';
+            emptyCell.className = 'calendar-cell p-3 relative transition-all duration-200';
             calendar.appendChild(emptyCell);
         }
         
@@ -1104,7 +1104,7 @@
             const cell = document.createElement('div');
             cell.className = 'calendar-cell p-3 relative transition-all duration-200';
             
-            // Numero del giorno con nuovo stile
+            // Numero del giorno
             const dateDiv = document.createElement('div');
             dateDiv.className = 'date-number';
             dateDiv.textContent = date;
