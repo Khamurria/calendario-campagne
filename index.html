@@ -314,6 +314,35 @@
             display: inline-block;
             margin-right: 8px;
         }
+
+        /* Stili per il modal */
+        .modal-open {
+            overflow: hidden;
+        }
+
+        #newCampaignContainer {
+            display: none;
+        }
+
+        #newCampaignContainer.show {
+            display: block;
+        }
+
+        /* Animazioni per il modal */
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-content {
+            animation: modalFadeIn 0.3s ease-out;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -424,99 +453,112 @@
 
     <main class="container mx-auto px-4 py-8">
         <!-- Form Nuova/Modifica Campagna -->
-        <div id="newCampaignContainer" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
-            <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold text-gray-900">Nuova Campagna</h3>
-                    <button onclick="toggleNewCampaign()" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                
-                <form id="campaignForm" onsubmit="saveCampaign(event)" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="col-span-2">
-                            <label class="block text-sm font-medium text-gray-700">Titolo</label>
-                            <input type="text" id="title" name="title" required
-                                   class="form-input mt-1">
+        <div id="newCampaignContainer" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <!-- Overlay scuro -->
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+            <!-- Contenitore del form centrato -->
+            <div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
+                    <!-- Header del form -->
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900" id="modal-title">
+                                Nuova Campagna
+                            </h3>
+                            <button type="button" onclick="toggleNewCampaign()" class="text-gray-400 hover:text-gray-500">
+                                <span class="sr-only">Chiudi</span>
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Tipologia</label>
-                            <input type="text" id="type" name="type" required
-                                   class="form-input mt-1">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Canale</label>
-                            <select id="channel" name="channel" required class="form-select mt-1">
-                                <option value="Instagram">Instagram</option>
-                                <option value="Facebook">Facebook</option>
-                                <option value="LinkedIn">LinkedIn</option>
-                                <option value="Twitter">Twitter</option>
-                                <option value="YouTube">YouTube</option>
-                                <option value="TikTok">TikTok</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Data Inizio</label>
-                            <input type="date" id="startDate" name="startDate" required
-                                   class="form-input mt-1">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Data Fine</label>
-                            <input type="date" id="endDate" name="endDate" required
-                                   class="form-input mt-1">
-                        </div>
-                        
-                        <div class="col-span-2">
-                            <label class="block text-sm font-medium text-gray-700">Link</label>
-                            <input type="url" id="link" name="link"
-                                   class="form-input mt-1">
-                        </div>
-                        
-                        <div class="col-span-2">
-                            <label class="block text-sm font-medium text-gray-700">Miniatura</label>
-                            <div id="uploadButton" class="mt-1">
-                                <input type="file" id="thumbnail" name="thumbnail" accept="image/*"
-                                       class="hidden" onchange="handleThumbnailChange(event)">
-                                <label for="thumbnail"
-                                       class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                                    <i class="fas fa-upload mr-2"></i>
-                                    Carica immagine
-                                </label>
+
+                        <!-- Form esistente -->
+                        <form id="campaignForm" onsubmit="saveCampaign(event)" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700">Titolo</label>
+                                    <input type="text" id="title" name="title" required
+                                           class="form-input mt-1">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Tipologia</label>
+                                    <input type="text" id="type" name="type" required
+                                           class="form-input mt-1">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Canale</label>
+                                    <select id="channel" name="channel" required class="form-select mt-1">
+                                        <option value="Instagram">Instagram</option>
+                                        <option value="Facebook">Facebook</option>
+                                        <option value="LinkedIn">LinkedIn</option>
+                                        <option value="Twitter">Twitter</option>
+                                        <option value="YouTube">YouTube</option>
+                                        <option value="TikTok">TikTok</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Data Inizio</label>
+                                    <input type="date" id="startDate" name="startDate" required
+                                           class="form-input mt-1">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Data Fine</label>
+                                    <input type="date" id="endDate" name="endDate" required
+                                           class="form-input mt-1">
+                                </div>
+                                
+                                <div class="col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700">Link</label>
+                                    <input type="url" id="link" name="link"
+                                           class="form-input mt-1">
+                                </div>
+                                
+                                <div class="col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700">Miniatura</label>
+                                    <div id="uploadButton" class="mt-1">
+                                        <input type="file" id="thumbnail" name="thumbnail" accept="image/*"
+                                               class="hidden" onchange="handleThumbnailChange(event)">
+                                        <label for="thumbnail"
+                                               class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                            <i class="fas fa-upload mr-2"></i>
+                                            Carica immagine
+                                        </label>
+                                    </div>
+                                    <div id="thumbnailPreview" class="hidden mt-2">
+                                        <img src="" alt="Preview" class="h-32 w-32 object-cover rounded-lg">
+                                        <button type="button" onclick="removeThumbnail()"
+                                                class="mt-2 text-sm text-red-600 hover:text-red-800">
+                                            <i class="fas fa-trash-alt mr-1"></i>
+                                            Rimuovi
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-span-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="isDark" name="isDark"
+                                               class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                        <span class="ml-2 text-sm text-gray-600">Modalità Dark</span>
+                                    </label>
+                                </div>
                             </div>
-                            <div id="thumbnailPreview" class="hidden mt-2">
-                                <img src="" alt="Preview" class="h-32 w-32 object-cover rounded-lg">
-                                <button type="button" onclick="removeThumbnail()"
-                                        class="mt-2 text-sm text-red-600 hover:text-red-800">
-                                    <i class="fas fa-trash-alt mr-1"></i>
-                                    Rimuovi
+                            
+                            <div class="flex justify-end space-x-3 mt-6">
+                                <button type="button" onclick="toggleNewCampaign()"
+                                        class="btn-secondary">
+                                    Annulla
+                                </button>
+                                <button type="submit" class="btn-primary">
+                                    Salva Campagna
                                 </button>
                             </div>
-                        </div>
-                        
-                        <div class="col-span-2">
-                            <label class="flex items-center">
-                                <input type="checkbox" id="isDark" name="isDark"
-                                       class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                <span class="ml-2 text-sm text-gray-600">Modalità Dark</span>
-                            </label>
-                        </div>
+                        </form>
                     </div>
-                    
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" onclick="toggleNewCampaign()"
-                                class="btn-secondary">
-                            Annulla
-                        </button>
-                        <button type="submit" class="btn-primary">
-                            Salva Campagna
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
 
@@ -818,11 +860,41 @@
 
     // Funzioni UI
     function toggleNewCampaign() {
-        const formContainer = document.getElementById('newCampaignContainer');
-        if (formContainer) {
-            formContainer.classList.toggle('hidden');
+        const container = document.getElementById('newCampaignContainer');
+        const body = document.body;
+        
+        if (container.classList.contains('hidden')) {
+            // Apri il modal
+            container.classList.remove('hidden');
+            body.classList.add('modal-open');
+            // Forza un reflow per attivare l'animazione
+            void container.offsetHeight;
+            container.classList.add('show');
+        } else {
+            // Chiudi il modal
+            container.classList.remove('show');
+            body.classList.remove('modal-open');
+            // Aggiungi un delay per l'animazione
+            setTimeout(() => {
+                container.classList.add('hidden');
+            }, 300);
         }
     }
+
+    // Chiudi il modal se si clicca fuori
+    document.addEventListener('click', (e) => {
+        const container = document.getElementById('newCampaignContainer');
+        const modalContent = container.querySelector('.modal-content');
+        
+        if (container.classList.contains('show') && !modalContent.contains(e.target)) {
+            toggleNewCampaign();
+        }
+    });
+
+    // Previeni la propagazione del click all'interno del modal
+    document.querySelector('.modal-content').addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
 
     function toggleView(view) {
         const calendarView = document.getElementById('calendarView');

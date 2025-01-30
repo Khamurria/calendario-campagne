@@ -61,6 +61,11 @@
         @media screen and (-webkit-min-device-pixel-ratio: 2) {
             /* Rimuovi questo blocco se presente */
         }
+
+        .channel-label {
+            font-weight: 500;
+            text-shadow: 0 0 1px rgba(255,255,255,0.5);
+        }
     </style>
 </head>
 <body>
@@ -69,7 +74,7 @@
             <div class="flex flex-col">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center space-x-4">
-                        <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/..." 
+                        <img src="img/regione-lombardia.jpg" 
                              alt="Logo Regione Lombardia" 
                              class="h-12 w-auto object-contain">
                         <h1 class="text-2xl font-bold text-gray-800">Calendario Campagne Social</h1>
@@ -81,31 +86,31 @@
                     <div class="flex items-center space-x-6">
                         <div class="flex items-center space-x-2">
                             <div class="w-3 h-3 rounded-full" style="background-color: var(--instagram-color)"></div>
-                            <span class="text-sm">Instagram</span>
+                            <span class="text-sm channel-label" style="color: var(--instagram-color)">Instagram</span>
                         </div>
                         <div class="flex items-center space-x-2">
                             <div class="w-3 h-3 rounded-full" style="background-color: var(--facebook-color)"></div>
-                            <span class="text-sm">Facebook</span>
+                            <span class="text-sm channel-label" style="color: var(--facebook-color)">Facebook</span>
                         </div>
                         <div class="flex items-center space-x-2">
                             <div class="w-3 h-3 rounded-full" style="background-color: var(--linkedin-color)"></div>
-                            <span class="text-sm">LinkedIn</span>
+                            <span class="text-sm channel-label" style="color: var(--linkedin-color)">LinkedIn</span>
                         </div>
                         <div class="flex items-center space-x-2">
                             <div class="w-3 h-3 rounded-full" style="background-color: var(--twitter-color)"></div>
-                            <span class="text-sm">Twitter</span>
+                            <span class="text-sm channel-label" style="color: var(--twitter-color)">Twitter</span>
                         </div>
                         <div class="flex items-center space-x-2">
                             <div class="w-3 h-3 rounded-full" style="background-color: var(--youtube-color)"></div>
-                            <span class="text-sm">YouTube</span>
+                            <span class="text-sm channel-label" style="color: var(--youtube-color)">YouTube</span>
                         </div>
                         <div class="flex items-center space-x-2">
                             <div class="w-3 h-3 rounded-full" style="background-color: var(--tiktok-color)"></div>
-                            <span class="text-sm">TikTok</span>
+                            <span class="text-sm channel-label" style="color: var(--tiktok-color)">TikTok</span>
                         </div>
-                        <div class="flex items-center space-x-2 ml-6 pl-6 border-l">
+                        <div class="flex items-center border-l pl-6 ml-2">
                             <div class="w-3 h-3 rounded-full" style="background-color: var(--dark-color)"></div>
-                            <span class="text-sm">Dark</span>
+                            <span class="text-sm channel-label" style="color: var(--dark-color)">Dark</span>
                         </div>
                     </div>
                 </div>
