@@ -1061,6 +1061,7 @@
             if (dayEvents.length > 0) {
                 const eventsContainer = document.createElement('div');
                 eventsContainer.className = 'space-y-2 overflow-y-auto max-h-[140px]';
+                
                 dayEvents.forEach(campaign => {
                     const eventDiv = document.createElement('div');
                     eventDiv.className = 'campaign-event text-xs';
@@ -1080,6 +1081,7 @@
                     
                     eventsContainer.appendChild(eventDiv);
                 });
+                
                 cell.appendChild(eventsContainer);
             }
             
