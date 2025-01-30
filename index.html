@@ -67,10 +67,14 @@
         }
         
         .campaign-event {
-            padding: 2px;
+            padding: 2px 4px;
             margin-bottom: 2px;
-            font-size: 0.7rem;  /* Testo più piccolo */
-            line-height: 1.2;   /* Interlinea ridotta */
+            border-radius: 3px;
+            font-size: 0.7rem;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .campaign-title {
@@ -343,6 +347,20 @@
         .modal-content {
             animation: modalFadeIn 0.3s ease-out;
         }
+
+        .campaign-line {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .campaign-event a {
+            color: inherit;
+        }
+
+        .campaign-event a:hover {
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -399,8 +417,7 @@
                         <h1 class="text-2xl font-bold text-gray-800">Calendario Campagne Social</h1>
                     </div>
                     <div class="flex space-x-4">
-                <button onclick="toggleNewCampaign()" 
-                                class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm font-medium">
+                <button id="newCampaignButton" onclick="openNewCampaign()" class="btn-primary">
                     <i class="fas fa-plus mr-2"></i>Nuova Campagna
                 </button>
                         <button onclick="shareCalendar()" 
@@ -418,32 +435,25 @@
                     <span class="text-sm font-medium text-gray-600 mr-4">Canali:</span>
                     <div class="flex items-center space-x-6">
                         <div class="flex items-center space-x-2">
-                            <div class="w-3 h-3 rounded-full" style="background-color: var(--instagram-color)"></div>
                             <span class="text-sm channel-label" style="color: var(--instagram-color)">Instagram</span>
-                                </div>
+                        </div>
                         <div class="flex items-center space-x-2">
-                            <div class="w-3 h-3 rounded-full" style="background-color: var(--facebook-color)"></div>
                             <span class="text-sm channel-label" style="color: var(--facebook-color)">Facebook</span>
-                            </div>
+                        </div>
                         <div class="flex items-center space-x-2">
-                            <div class="w-3 h-3 rounded-full" style="background-color: var(--linkedin-color)"></div>
                             <span class="text-sm channel-label" style="color: var(--linkedin-color)">LinkedIn</span>
-                    </div>
+                        </div>
                         <div class="flex items-center space-x-2">
-                            <div class="w-3 h-3 rounded-full" style="background-color: var(--twitter-color)"></div>
                             <span class="text-sm channel-label" style="color: var(--twitter-color)">Twitter</span>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <div class="w-3 h-3 rounded-full" style="background-color: var(--youtube-color)"></div>
                             <span class="text-sm channel-label" style="color: var(--youtube-color)">YouTube</span>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <div class="w-3 h-3 rounded-full" style="background-color: var(--tiktok-color)"></div>
                             <span class="text-sm channel-label" style="color: var(--tiktok-color)">TikTok</span>
                         </div>
                         <div class="flex items-center border-l pl-6 ml-2">
-                            <div class="w-3 h-3 rounded-full" style="background-color: var(--dark-color)"></div>
-                            <span class="text-sm channel-label" style="color: var(--dark-color)">Dark</span>
+                            <span class="text-sm channel-label">Dark <i class="fas fa-circle text-gray-900 ml-1"></i></span>
                         </div>
                     </div>
                 </div>
@@ -831,18 +841,18 @@
     // Modifica gli event listener del modal
     document.addEventListener('click', (e) => {
         const container = document.getElementById('newCampaignContainer');
-        if (!container) return;
+        if (!container || container.classList.contains('hidden')) return;
 
         const modalContent = container.querySelector('.relative');
-        const editButton = e.target.closest('button[onclick="editCampaign"]');
-        const closeButton = e.target.closest('button[onclick="toggleNewCampaign"]');
+        const isEditButton = e.target.closest('button[onclick^="editCampaign"]');
+        const isNewButton = e.target.closest('#newCampaignButton');
+        const isCloseButton = e.target.closest('button[onclick="toggleNewCampaign()"]');
         
-        // Non chiudere il modal se si clicca sul pulsante modifica o sul pulsante chiudi
-        if (container.classList.contains('show') && 
-            modalContent && 
+        if (modalContent && 
             !modalContent.contains(e.target) && 
-            !editButton &&
-            !closeButton) {
+            !isEditButton && 
+            !isNewButton && 
+            !isCloseButton) {
             toggleNewCampaign();
         }
     });
@@ -969,11 +979,7 @@
             submitButton.textContent = 'Modifica Campagna';
         }
 
-        // Apri il form
-        const container = document.getElementById('newCampaignContainer');
-        if (container.classList.contains('hidden')) {
-            toggleNewCampaign();
-        }
+        toggleNewCampaign();
     }
 
     // Funzioni di rendering
@@ -1029,38 +1035,19 @@
                 eventsContainer.className = 'space-y-2 overflow-y-auto max-h-[140px]';
                 dayEvents.forEach(campaign => {
                     const eventDiv = document.createElement('div');
-                    eventDiv.className = `p-2 rounded-md shadow-sm cursor-pointer hover:shadow-md transition-all`;
-                    const color = channelColors[campaign.channel];
-                    eventDiv.style.backgroundColor = `${color}15`;
+                    eventDiv.className = 'campaign-event text-xs';
+                    eventDiv.style.backgroundColor = `${channelColors[campaign.channel]}20`;
+                    eventDiv.style.color = channelColors[campaign.channel];
                     
-                    const header = document.createElement('div');
-                    header.className = 'flex items-center gap-2 mb-1';
-                    
-                    const channelDot = document.createElement('span');
-                    channelDot.className = 'w-2 h-2 rounded-full flex-shrink-0';
-                    channelDot.style.backgroundColor = color;
-                    header.appendChild(channelDot);
-                    
-                    const title = document.createElement('div');
-                    title.className = 'font-medium text-xs truncate text-gray-800';
-                    title.textContent = campaign.title;
-                    header.appendChild(title);
-                    
-                    eventDiv.appendChild(header);
-                    
-                    const type = document.createElement('div');
-                    type.className = 'text-xs text-gray-600 truncate ml-4';
-                    type.textContent = campaign.type;
-                    eventDiv.appendChild(type);
-                    
-                    if (campaign.link) {
-                        const link = document.createElement('a');
-                        link.href = campaign.link;
-                        link.target = '_blank';
-                        link.className = 'text-xs text-blue-600 hover:text-blue-800 ml-4 mt-1 inline-block';
-                        link.innerHTML = '<i class="fas fa-external-link-alt mr-1"></i>Link';
-                        eventDiv.appendChild(link);
-                    }
+                    // Crea una singola riga con tutti i dettagli
+                    const details = [
+                        campaign.title,
+                        campaign.type,
+                        campaign.link ? '<a href="' + campaign.link + '" target="_blank" class="underline">link</a>' : '',
+                        campaign.isDark ? '•' : ''
+                    ].filter(Boolean).join(' | ');
+
+                    eventDiv.innerHTML = `<div class="campaign-line">${details}</div>`;
                     
                     eventsContainer.appendChild(eventDiv);
                 });
@@ -1267,6 +1254,28 @@
     document.addEventListener('DOMContentLoaded', () => {
         initializeApp();
     });
+
+    // Aggiungi questa nuova funzione per gestire l'apertura di una nuova campagna
+    function openNewCampaign() {
+        const form = document.getElementById('campaignForm');
+        if (form) {
+            form.reset();
+            delete form.dataset.editId;
+            
+            // Reset della preview immagine
+            const preview = document.getElementById('thumbnailPreview');
+            const uploadButton = document.getElementById('uploadButton');
+            preview.classList.add('hidden');
+            uploadButton.classList.remove('hidden');
+            
+            // Aggiorna il testo del pulsante
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.textContent = 'Salva Campagna';
+            }
+        }
+        toggleNewCampaign();
+    }
     </script>
 </body>
 </html>
