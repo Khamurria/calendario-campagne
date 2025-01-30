@@ -74,6 +74,7 @@
             line-height: 1.3;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             letter-spacing: 0.01em;
+            cursor: default;
         }
         
         .campaign-title {
@@ -96,10 +97,11 @@
             text-decoration: none;
             border-bottom: 1px dotted currentColor;
             cursor: pointer;
+            transition: opacity 0.2s;
         }
 
         .campaign-event a:hover {
-            opacity: 0.9;
+            opacity: 0.8;
             border-bottom-style: solid;
         }
 
@@ -368,7 +370,7 @@
         }
 
         .campaign-event a:hover {
-            opacity: 0.9;
+            opacity: 0.8;
             border-bottom-style: solid;
         }
     </style>
@@ -1060,17 +1062,19 @@
                     eventDiv.style.backgroundColor = `${channelColors[campaign.channel]}20`;
                     eventDiv.style.color = channelColors[campaign.channel];
                     
-                    // Crea una singola riga con tutti i dettagli
-                    const details = [
-                        campaign.title,
-                        campaign.type,
-                        campaign.link ? `<a href="${campaign.link}" target="_blank" class="underline hover:opacity-80">link</a>` : '',
-                        campaign.isDark ? '•' : ''
-                    ].filter(Boolean).join(' | ');
+                    // Modifica il modo in cui vengono creati i dettagli
+                    const titleAndType = `${campaign.title} | ${campaign.type}`;
+                    const linkPart = campaign.link ? `| <a href="${campaign.link}" target="_blank" class="underline hover:opacity-80 cursor-pointer">link</a>` : '';
+                    const darkPart = campaign.isDark ? ' | •' : '';
 
-                    // Rimuovi la classe cursor-pointer dall'evento
-                    eventDiv.className = 'campaign-event text-xs';
-                    eventDiv.innerHTML = `<div class="campaign-line">${details}</div>`;
+                    // Assembla i dettagli senza rendere l'intera riga cliccabile
+                    eventDiv.innerHTML = `
+                        <div class="campaign-line">
+                            <span class="cursor-default">${titleAndType}</span>
+                            ${linkPart}
+                            <span class="cursor-default">${darkPart}</span>
+                        </div>
+                    `;
                     
                     eventsContainer.appendChild(eventDiv);
                 });
@@ -1364,6 +1368,63 @@
         } catch (error) {
             console.error('Errore nel salvataggio:', error);
             showError('Errore nel salvataggio della campagna');
+        }
+    }
+
+    // Aggiungi queste funzioni per la gestione dei gist
+    async function updateGist(gistId, data) {
+        try {
+            await axios({
+                method: 'PATCH',
+                url: `https://api.github.com/gists/${gistId}`,
+                headers: {
+                    'Authorization': `token ${getGitHubToken()}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                data: {
+                    files: {
+                        'calendar_data.json': {
+                            content: JSON.stringify(data)
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Errore nell\'aggiornamento del gist:', error);
+            if(error.response?.status === 404) {
+                localStorage.removeItem('calendarGistId');
+                throw new Error('Gist non trovato');
+            }
+            throw error;
+        }
+    }
+
+    async function createNewGist(data) {
+        try {
+            const response = await axios({
+                method: 'POST',
+                url: 'https://api.github.com/gists',
+                headers: {
+                    'Authorization': `token ${getGitHubToken()}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                data: {
+                    description: 'Calendario Campagne Social',
+                    public: false,
+                    files: {
+                        'calendar_data.json': {
+                            content: JSON.stringify(data)
+                        }
+                    }
+                }
+            });
+            localStorage.setItem('calendarGistId', response.data.id);
+            return response.data.id;
+        } catch (error) {
+            console.error('Errore nella creazione del gist:', error);
+            throw error;
         }
     }
     </script>
