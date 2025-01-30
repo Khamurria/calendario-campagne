@@ -373,7 +373,14 @@
                 const gistId = urlParams.get('id');
                 
                 if (!gistId) {
-                    throw new Error('ID condivisione mancante');
+                    showError('ID non valido');
+                    return;
+                }
+
+                const token = localStorage.getItem('github_token');
+                if (token && await validateSharedToken(token)) {
+                    // Usa il token salvato se valido
+                    github.defaults.headers.common['Authorization'] = `token ${token}`;
                 }
 
                 const response = await github.get(`/gists/${gistId}`);
@@ -407,7 +414,7 @@
                 showSharingInfo();
             } catch (error) {
                 console.error('Errore nel caricamento:', error);
-                showError(error.message || 'Errore nel caricamento dei dati');
+                showError('Errore nel caricamento dei dati condivisi');
             }
         }
 
@@ -507,6 +514,21 @@
                 month: 'short',
                 year: 'numeric'
             });
+        }
+
+        // Gestione del token per la vista condivisa
+        async function validateSharedToken(token) {
+            try {
+                const response = await axios.get('https://api.github.com/gists', {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                return response.status === 200;
+            } catch (error) {
+                return false;
+            }
         }
     </script>
 </body>
