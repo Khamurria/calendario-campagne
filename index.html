@@ -1059,8 +1059,12 @@
             // Reset del form e dello stato
             form.reset();
             delete form.dataset.editId;
-            document.getElementById('thumbnailPreview').classList.add('hidden');
-            document.getElementById('uploadButton').classList.remove('hidden');
+            
+            // Reset della preview immagine
+            const preview = document.getElementById('thumbnailPreview');
+            const uploadButton = document.getElementById('uploadButton');
+            preview.classList.add('hidden');
+            uploadButton.classList.remove('hidden');
             
             // Chiudi il form
             toggleNewCampaign();
@@ -1325,13 +1329,13 @@
                 }
             });
 
-            const shareUrl = `${window.location.origin}/share.html?id=${response.data.id}`;
+            // Usa il percorso corretto per share.html
+            const shareUrl = `${window.location.href}share.html?id=${response.data.id}`;
             
             try {
                 await navigator.clipboard.writeText(shareUrl);
                 showSuccess('Link di condivisione copiato negli appunti! Il link scadrà tra 7 giorni.');
             } catch (clipboardError) {
-                // Fallback se la copia negli appunti fallisce
                 showSuccess(`Link di condivisione: ${shareUrl}\nIl link scadrà tra 7 giorni.`);
             }
         } catch (error) {
@@ -1369,7 +1373,10 @@
             return;
         }
 
-        // Accedi agli elementi usando getElementById
+        // Reset del form prima di popolarlo
+        form.reset();
+        
+        // Popola i campi
         document.getElementById('title').value = campaign.title;
         document.getElementById('type').value = campaign.type;
         document.getElementById('channel').value = campaign.channel;
@@ -1379,11 +1386,17 @@
         document.getElementById('isDark').checked = campaign.isDark || false;
 
         // Gestione anteprima miniatura
+        const preview = document.getElementById('thumbnailPreview');
+        const uploadButton = document.getElementById('uploadButton');
+        
         if (campaign.thumbnail) {
-            const preview = document.getElementById('thumbnailPreview');
             const previewImg = preview.querySelector('img');
             previewImg.src = campaign.thumbnail;
             preview.classList.remove('hidden');
+            uploadButton.classList.add('hidden');
+        } else {
+            preview.classList.add('hidden');
+            uploadButton.classList.remove('hidden');
         }
 
         form.dataset.editId = id;
