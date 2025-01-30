@@ -1197,27 +1197,25 @@
                             }
                             <div>
                                 <div class="font-medium text-gray-900">${campaign.title}</div>
-                                <div class="text-sm text-gray-500">${campaign.type}</div>
                             </div>
                         </div>
                     </td>
                     <td class="px-6 py-4">
-                        <div class="flex items-center">
-                            <i class="far fa-calendar-alt mr-2 text-gray-400"></i>
+                        <div class="text-sm text-gray-500">
                             ${formatDate(campaign.startDate)} - ${formatDate(campaign.endDate)}
                         </div>
                     </td>
                     <td class="px-6 py-4">
-                        <span class="text-gray-700">${campaign.type}</span>
+                        <div class="text-sm text-gray-500">${campaign.type}</div>
                     </td>
                     <td class="px-6 py-4">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                              style="background-color: ${channelColors[campaign.channel]}20; color: ${channelColors[campaign.channel]}">
+                        <div class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium"
+                             style="background-color: ${channelColors[campaign.channel]}20; color: ${channelColors[campaign.channel]}">
                             ${campaign.channel}
-                        </span>
+                        </div>
                     </td>
                     <td class="px-6 py-4 text-center">
-                        ${campaign.isDark ? '<i class="fas fa-circle text-gray-900"></i>' : ''}
+                        ${campaign.isDark ? '<i class="fas fa-circle text-gray-900"></i>' : '-'}
                     </td>
                     <td class="px-6 py-4">
                         ${campaign.link ? `
@@ -1227,7 +1225,7 @@
                         ` : '-'}
                     </td>
                     <td class="px-6 py-4 text-right">
-                        <div class="flex justify-end space-x-2">
+                        <div class="flex justify-end space-x-3">
                             <button onclick="editCampaign('${campaign.id}')" 
                                     class="text-blue-600 hover:text-blue-800">
                                 <i class="fas fa-edit"></i>
