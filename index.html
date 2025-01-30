@@ -746,114 +746,61 @@
     // Funzioni GitHub
     async function loadCampaigns() {
         try {
-            const token = getGitHubToken();
-            console.log('Loading campaigns with token:', !!token);
-            
-            if (!token) {
-                showError('Token GitHub non trovato');
+            const gistId = localStorage.getItem('calendarGistId');
+            if (!gistId) {
+                console.log('Nessun gist trovato, inizializzazione con dati vuoti');
+                campaigns = [];
                 return;
             }
 
-            const gistId = localStorage.getItem('calendarGistId') || GIST_ID;
-            console.log('Using gistId:', gistId);
-            
             const response = await axios.get(`https://api.github.com/gists/${gistId}`, {
                 headers: {
-                    'Authorization': `token ${token}`,
+                    'Authorization': `token ${getGitHubToken()}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });
-            console.log('Gist loaded successfully');
-
-            if (!localStorage.getItem('calendarGistId')) {
-                localStorage.setItem('calendarGistId', gistId);
-                console.log('Saved gistId to localStorage');
-            }
 
             const content = JSON.parse(response.data.files['calendar_data.json'].content);
-            console.log('Parsed content:', content);
-            
             campaigns = content.campaigns || [];
-            console.log('Loaded campaigns:', campaigns.length);
             
-            if (content.currentMonth) {
-                currentDate = new Date(
-                    content.currentMonth.year,
-                    content.currentMonth.month
-                );
+            // Carica la data salvata
+            if (content.currentDate) {
+                currentDate = new Date(content.currentDate.year, content.currentDate.month);
             }
-
-            renderCalendar();
-            renderCampaigns();
         } catch (error) {
-            console.error('Detailed error in loadCampaigns:', error);
-            showError('Errore nel caricamento delle campagne');
+            console.error('Errore nel caricamento:', error);
+            showError('Errore nel caricamento dei dati');
+            throw error;
         }
     }
 
     async function saveCampaigns() {
         try {
-            const content = {
+            const token = getGitHubToken();
+            if (!token) {
+                throw new Error('Token GitHub non trovato');
+            }
+
+            const gistId = localStorage.getItem('calendarGistId');
+            const data = {
                 campaigns: campaigns,
-                currentMonth: {
+                currentDate: {
                     year: currentDate.getFullYear(),
                     month: currentDate.getMonth()
                 },
-                updatedAt: new Date().toISOString()
+                lastUpdate: new Date().toISOString()
             };
 
-            // Se esiste già un gist, lo aggiorniamo
-            if (window.localStorage.getItem('calendarGistId')) {
-                const gistId = window.localStorage.getItem('calendarGistId');
-                await axios({
-                    method: 'PATCH',
-                    url: `https://api.github.com/gists/${gistId}`,
-                    headers: {
-                        'Authorization': `token ${getGitHubToken()}`,
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Content-Type': 'application/json'
-                    },
-                    data: {
-                        files: {
-                            'calendar_data.json': {
-                                content: JSON.stringify(content)
-                            }
-                        }
-                    }
-                });
+            if (gistId) {
+                await updateGist(gistId, data);
             } else {
-                // Creiamo un nuovo gist
-                const response = await axios({
-                    method: 'POST',
-                    url: 'https://api.github.com/gists',
-                    headers: {
-                        'Authorization': `token ${getGitHubToken()}`,
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Content-Type': 'application/json'
-                    },
-                    data: {
-                        description: 'Calendario Campagne Social',
-                        public: false,
-                        files: {
-                            'calendar_data.json': {
-                                content: JSON.stringify(content)
-                            }
-                        }
-                    }
-                });
-                window.localStorage.setItem('calendarGistId', response.data.id);
+                await createNewGist(data);
             }
+            
+            showSuccess('Dati salvati con successo');
         } catch (error) {
             console.error('Errore nel salvataggio:', error);
-            if(error.response?.status === 401) {
-                showError('Token scaduto o non valido');
-                localStorage.removeItem('github_token');
-                openTokenSettings();
-            }
-            if(error.response?.status === 404) {
-                localStorage.removeItem('calendarGistId');
-                return await saveCampaigns();
-            }
+            showError('Errore nel salvataggio dei dati');
             throw error;
         }
     }
@@ -884,16 +831,26 @@
     // Chiudi il modal se si clicca fuori
     document.addEventListener('click', (e) => {
         const container = document.getElementById('newCampaignContainer');
-        const modalContent = container.querySelector('.modal-content');
+        if (!container) return;
+
+        const modalContent = container.querySelector('.relative');
         
-        if (container.classList.contains('show') && !modalContent.contains(e.target)) {
+        if (container.classList.contains('show') && 
+            modalContent && 
+            !modalContent.contains(e.target) && 
+            !e.target.closest('button[onclick="toggleNewCampaign()"]')) {
             toggleNewCampaign();
         }
     });
 
-    // Previeni la propagazione del click all'interno del modal
-    document.querySelector('.modal-content').addEventListener('click', (e) => {
-        e.stopPropagation();
+    // Aggiungi questo event listener al contenuto del modal
+    document.addEventListener('DOMContentLoaded', () => {
+        const modalContent = document.querySelector('.relative');
+        if (modalContent) {
+            modalContent.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
     });
 
     function toggleView(view) {
@@ -1029,30 +986,22 @@
         const calendar = document.getElementById('calendar');
         const monthTitle = document.getElementById('currentMonth');
         
-        // Aggiungi controllo null
-        if (!calendar || !monthTitle) {
-            console.error('Elementi del calendario non trovati!');
-            return;
+        if (!currentDate) {
+            currentDate = new Date();
         }
-
-        // FORMATTAZIONE CORRETTA DELLA DATA
-        const currentYear = currentDate.getFullYear();
-        const currentMonth = currentDate.getMonth(); // 0-11
         
-        // Array mesi aggiornato
         const monthNames = [
             'Gennaio', 'Febbraio', 'Marzo', 'Aprile',
             'Maggio', 'Giugno', 'Luglio', 'Agosto',
             'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
         ];
         
-        // Imposta il titolo subito
-        monthTitle.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+        monthTitle.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
         
         calendar.innerHTML = '';
         
-        const firstDay = new Date(currentYear, currentMonth, 1);
-        const lastDay = new Date(currentYear, currentMonth + 1, 0);
+        const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
         
         // Celle vuote iniziali
         for (let i = 0; i < firstDay.getDay(); i++) {
@@ -1230,6 +1179,13 @@
             console.log('Caricamento campagne...');
             await loadCampaigns();
             console.log('Campagne caricate:', campaigns.length);
+            
+            // Se non c'è una data salvata, usa la data corrente
+            if (!currentDate) {
+                currentDate = new Date();
+            }
+            
+            // Renderizza subito il calendario e le campagne
             renderCalendar();
             renderCampaigns();
         } catch (error) {
