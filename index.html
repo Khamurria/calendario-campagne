@@ -828,17 +828,21 @@
         }
     }
 
-    // Chiudi il modal se si clicca fuori
+    // Modifica gli event listener del modal
     document.addEventListener('click', (e) => {
         const container = document.getElementById('newCampaignContainer');
         if (!container) return;
 
         const modalContent = container.querySelector('.relative');
+        const editButton = e.target.closest('button[onclick="editCampaign"]');
+        const closeButton = e.target.closest('button[onclick="toggleNewCampaign"]');
         
+        // Non chiudere il modal se si clicca sul pulsante modifica o sul pulsante chiudi
         if (container.classList.contains('show') && 
             modalContent && 
             !modalContent.contains(e.target) && 
-            !e.target.closest('button[onclick="toggleNewCampaign()"]')) {
+            !editButton &&
+            !closeButton) {
             toggleNewCampaign();
         }
     });
@@ -917,67 +921,58 @@
     }
 
     // Funzione per modificare una campagna
-    async function saveCampaign(e) {
-        e.preventDefault();
-        const form = e.target;
+    function editCampaign(id) {
+        console.log('Modifica campagna:', id);
+        const campaign = campaigns.find(c => c.id === id);
+        if (!campaign) {
+            console.error('Campagna non trovata:', id);
+            return;
+        }
         
-        try {
-            let thumbnail = null;
-            const thumbnailFile = form.thumbnail.files[0];
-            if (thumbnailFile) {
-                thumbnail = await handleImageUpload(thumbnailFile);
-            } else if (form.dataset.editId) {
-                // Mantieni la thumbnail esistente se stiamo modificando
-                const existingCampaign = campaigns.find(c => c.id === form.dataset.editId);
-                thumbnail = existingCampaign?.thumbnail;
-            }
-            
-            const campaign = {
-                id: form.dataset.editId || Date.now().toString(),
-                title: form.title.value,
-                type: form.type.value,
-                channel: form.channel.value,
-                startDate: form.startDate.value,
-                endDate: form.endDate.value,
-                link: form.link.value,
-                isDark: form.isDark.checked,
-                thumbnail: thumbnail
-            };
+        const form = document.getElementById('campaignForm');
+        if (!form) {
+            console.error('Form non trovato');
+            return;
+        }
 
-            if (form.dataset.editId) {
-                // Modifica: sostituisci la campagna esistente
-                const index = campaigns.findIndex(c => c.id === form.dataset.editId);
-                if (index !== -1) {
-                    campaigns[index] = campaign;
-                }
-            } else {
-                // Nuova campagna
-                campaigns.push(campaign);
-            }
-            
-            await saveCampaigns();
-            
-            // Reset del form e dello stato
-            form.reset();
-            delete form.dataset.editId;
-            
-            // Reset della preview immagine
-            const preview = document.getElementById('thumbnailPreview');
-            const uploadButton = document.getElementById('uploadButton');
+        // Reset del form prima di popolarlo
+        form.reset();
+        
+        // Popola i campi
+        document.getElementById('title').value = campaign.title;
+        document.getElementById('type').value = campaign.type;
+        document.getElementById('channel').value = campaign.channel;
+        document.getElementById('startDate').value = campaign.startDate;
+        document.getElementById('endDate').value = campaign.endDate;
+        document.getElementById('link').value = campaign.link || '';
+        document.getElementById('isDark').checked = campaign.isDark || false;
+
+        // Gestione anteprima miniatura
+        const preview = document.getElementById('thumbnailPreview');
+        const uploadButton = document.getElementById('uploadButton');
+        
+        if (campaign.thumbnail) {
+            const previewImg = preview.querySelector('img');
+            previewImg.src = campaign.thumbnail;
+            preview.classList.remove('hidden');
+            uploadButton.classList.add('hidden');
+        } else {
             preview.classList.add('hidden');
             uploadButton.classList.remove('hidden');
-            
-            // Chiudi il form
+        }
+
+        form.dataset.editId = id;
+        
+        // Aggiorna il testo del pulsante
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.textContent = 'Modifica Campagna';
+        }
+
+        // Apri il form
+        const container = document.getElementById('newCampaignContainer');
+        if (container.classList.contains('hidden')) {
             toggleNewCampaign();
-            
-            // Aggiorna le visualizzazioni
-            renderCampaigns();
-            renderCalendar();
-            
-            showSuccess('Campagna salvata con successo');
-        } catch (error) {
-            console.error('Errore nel salvataggio:', error);
-            showError('Errore nel salvataggio della campagna');
         }
     }
 
@@ -1257,59 +1252,6 @@
             console.error('Errore nell\'eliminazione:', error);
             showError('Errore nell\'eliminazione della campagna');
         }
-    }
-
-    // Funzione per modificare una campagna
-    function editCampaign(id) {
-        console.log('Modifica campagna:', id); // Debug
-        const campaign = campaigns.find(c => c.id === id);
-        if (!campaign) {
-            console.error('Campagna non trovata:', id);
-            return;
-        }
-        
-        const form = document.getElementById('campaignForm');
-        if (!form) {
-            console.error('Form non trovato');
-            return;
-        }
-
-        // Reset del form prima di popolarlo
-        form.reset();
-        
-        // Popola i campi
-        document.getElementById('title').value = campaign.title;
-        document.getElementById('type').value = campaign.type;
-        document.getElementById('channel').value = campaign.channel;
-        document.getElementById('startDate').value = campaign.startDate;
-        document.getElementById('endDate').value = campaign.endDate;
-        document.getElementById('link').value = campaign.link || '';
-        document.getElementById('isDark').checked = campaign.isDark || false;
-
-        // Gestione anteprima miniatura
-        const preview = document.getElementById('thumbnailPreview');
-        const uploadButton = document.getElementById('uploadButton');
-        
-        if (campaign.thumbnail) {
-            const previewImg = preview.querySelector('img');
-            previewImg.src = campaign.thumbnail;
-            preview.classList.remove('hidden');
-            uploadButton.classList.add('hidden');
-        } else {
-            preview.classList.add('hidden');
-            uploadButton.classList.remove('hidden');
-        }
-
-        form.dataset.editId = id;
-        
-        // Aggiorna il testo del pulsante
-        const submitButton = form.querySelector('button[type="submit"]');
-        if (submitButton) {
-            submitButton.textContent = 'Modifica Campagna';
-        }
-
-        // Apri il form
-        toggleNewCampaign();
     }
 
     // Debug mode
