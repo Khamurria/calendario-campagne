@@ -824,8 +824,10 @@
     async function saveCampaigns() {
         try {
             const gistId = localStorage.getItem('calendarGistId');
-            if (!gistId) {
-                throw new Error('Nessun Gist ID trovato');
+            const token = getGitHubToken();
+            
+            if (!gistId || !token) {
+                throw new Error('Mancano le credenziali necessarie');
             }
 
             const data = {
@@ -841,8 +843,9 @@
                 method: 'PATCH',
                 url: `https://api.github.com/gists/${gistId}`,
                 headers: {
-                    'Authorization': `token ${getGitHubToken()}`,
-                    'Accept': 'application/vnd.github.v3+json'
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
                 },
                 data: {
                     files: {
@@ -853,15 +856,19 @@
                 }
             });
 
-            // Verifica che il salvataggio sia avvenuto correttamente
             if (response.status === 200) {
-                console.log('Dati salvati con successo');
                 return true;
             } else {
-                throw new Error('Errore nel salvataggio dei dati');
+                throw new Error(`Errore nel salvataggio: ${response.status}`);
             }
         } catch (error) {
-            console.error('Errore nel salvataggio:', error);
+            if (error.response?.status === 401) {
+                localStorage.removeItem('githubToken');
+                showError('Token non valido. Inserisci un nuovo token nelle impostazioni.');
+                toggleSettings();
+            } else {
+                showError('Errore nel salvataggio dei dati');
+            }
             throw error;
         }
     }
@@ -1075,7 +1082,13 @@
     }
 
     function getGitHubToken() {
-        // Implementa la logica per ottenere il token GitHub
+        const token = localStorage.getItem('githubToken');
+        if (!token) {
+            showError('Token GitHub non trovato. Controlla le impostazioni.');
+            toggleSettings();
+            return null;
+        }
+        return token;
     }
 
     // Funzione di inizializzazione migliorata
@@ -1157,7 +1170,7 @@
                 endDate: form.endDate.value,
                 link: form.link.value.trim() || null,
                 isDark: form.isDark.checked,
-                thumbnail: null // Gestiremo l'immagine separatamente
+                thumbnail: null
             };
 
             // Validazione
@@ -1185,30 +1198,36 @@
             // Salva nel gist
             await saveCampaigns();
 
-            // Aggiorna le visualizzazioni
-            renderCalendar();
-            renderCampaigns();
-
-            // Chiudi il modal e resetta il form
+            // Chiudi il modal
             const modal = document.getElementById('newCampaignModal');
             if (modal) {
                 modal.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
             }
+
+            // Reset form e immagine
             form.reset();
-
-            // Reset anteprima immagine
-            thumbnailPreview.classList.add('hidden');
-            const placeholder = document.getElementById('thumbnailPlaceholder');
-            if (placeholder) {
-                placeholder.classList.remove('hidden');
+            if (thumbnailPreview) {
+                thumbnailPreview.classList.add('hidden');
+                const placeholder = document.getElementById('thumbnailPlaceholder');
+                if (placeholder) placeholder.classList.remove('hidden');
             }
 
+            // Aggiorna visualizzazioni
+            renderCalendar();
+            renderCampaigns();
+            
             // Mostra messaggio di successo
             showSuccess('Campagna salvata con successo');
 
         } catch (error) {
             console.error('Errore nel salvataggio della campagna:', error);
-            showError('Errore nel salvataggio della campagna');
+            if (error.response?.status === 401) {
+                showError('Token non valido. Controlla le impostazioni.');
+                toggleSettings();
+            } else {
+                showError('Errore nel salvataggio della campagna');
+            }
         }
     }
 
