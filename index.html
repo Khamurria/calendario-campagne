@@ -876,6 +876,7 @@
         const calendar = document.getElementById('calendar');
         const monthTitle = document.getElementById('currentMonth');
         
+        // Assicurati che currentDate sia definita
         if (!currentDate) {
             currentDate = new Date();
         }
@@ -923,7 +924,23 @@
                 eventsContainer.className = 'space-y-2 overflow-y-auto max-h-[140px]';
                 
                 dayEvents.forEach(campaign => {
-                    // ... resto del codice per renderizzare gli eventi ...
+                    const eventDiv = document.createElement('div');
+                    eventDiv.className = 'campaign-event text-xs';
+                    eventDiv.style.backgroundColor = `${channelColors[campaign.channel]}15`;
+                    
+                    const titleAndType = `${campaign.title} | ${campaign.type}`;
+                    const linkPart = campaign.link ? `| <a href="${campaign.link}" target="_blank" class="link-style">link</a>` : '';
+                    const darkPart = campaign.isDark ? ' | <span class="dark-dot">•</span>' : '';
+
+                    eventDiv.innerHTML = `
+                        <div class="campaign-line text-gray-900">
+                            <span class="font-medium">${titleAndType}</span>
+                            ${linkPart}
+                            ${darkPart}
+                        </div>
+                    `;
+                    
+                    eventsContainer.appendChild(eventDiv);
                 });
                 
                 cell.appendChild(eventsContainer);
@@ -1010,16 +1027,15 @@
 
     // Funzione di inizializzazione migliorata
     async function initializeApp() {
+        currentDate = new Date(); // Imposta sempre una data iniziale
         try {
-            // Carica le campagne dal gist
             await loadCampaigns();
-            
-            // Renderizza il calendario e le campagne
             renderCalendar();
             renderCampaigns();
         } catch (error) {
             console.error('Errore nell\'inizializzazione:', error);
-            showError('Errore nel caricamento dei dati');
+            renderCalendar(); // Renderizza comunque il calendario anche se vuoto
+            renderCampaigns();
         }
     }
 
@@ -1186,7 +1202,7 @@
         initializeApp(); // Ricarica l'app con il nuovo token
     }
 
-    // Assicurati che le funzioni di navigazione del calendario funzionino
+    // Aggiungi queste funzioni per la navigazione
     function prevMonth() {
         currentDate.setMonth(currentDate.getMonth() - 1);
         renderCalendar();
