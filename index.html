@@ -1009,12 +1009,16 @@
             <tr class="hover:bg-gray-50 transition-colors">
                 <td class="px-6 py-4">
                     <div class="flex items-center">
-                        ${campaign.thumbnail ? 
-                            `<img src="${campaign.thumbnail}" alt="${campaign.title}" class="w-12 h-12 rounded-lg object-cover mr-3">` :
-                            `<div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center mr-3">
-                                <i class="fas fa-image text-gray-400"></i>
-                             </div>`
-                        }
+                        <div class="flex-shrink-0 w-12 h-12 mr-3">
+                            ${campaign.thumbnail ? 
+                                `<img src="${campaign.thumbnail}" 
+                                      alt="${campaign.title}" 
+                                      class="w-12 h-12 rounded-lg object-cover">` :
+                                `<div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                                    <i class="fas fa-image text-gray-400"></i>
+                                 </div>`
+                            }
+                        </div>
                         <div>
                             <div class="font-medium text-gray-900">${campaign.title}</div>
                             <div class="text-sm text-gray-500">${campaign.type}</div>
@@ -1188,10 +1192,11 @@
         
         try {
             const form = event.target;
+            const isEdit = !!form.dataset.editId;
             
             // Raccogli i dati dal form
-            const newCampaign = {
-                id: Date.now().toString(),
+            const campaignData = {
+                id: form.dataset.editId || Date.now().toString(),
                 title: form.title.value.trim(),
                 type: form.type.value.trim(),
                 channel: form.channel.value,
@@ -1202,20 +1207,33 @@
             };
 
             // Validazione
-            if (!newCampaign.title || !newCampaign.type || !newCampaign.channel || !newCampaign.startDate || !newCampaign.endDate) {
+            if (!campaignData.title || !campaignData.type || !campaignData.channel || !campaignData.startDate || !campaignData.endDate) {
                 showError('Tutti i campi obbligatori devono essere compilati');
                 return;
             }
 
             // Verifica date
-            if (new Date(newCampaign.endDate) < new Date(newCampaign.startDate)) {
+            if (new Date(campaignData.endDate) < new Date(campaignData.startDate)) {
                 showError('La data di fine deve essere successiva alla data di inizio');
                 return;
             }
 
-            // Aggiungi la campagna all'array
-            if (!campaigns) campaigns = [];
-            campaigns.push(newCampaign);
+            // Gestione immagine
+            const thumbnailPreview = document.getElementById('thumbnailPreview');
+            if (!thumbnailPreview.classList.contains('hidden')) {
+                campaignData.thumbnail = thumbnailPreview.src;
+            }
+
+            if (isEdit) {
+                // Modifica campagna esistente
+                const index = campaigns.findIndex(c => c.id === form.dataset.editId);
+                if (index !== -1) {
+                    campaigns[index] = campaignData;
+                }
+            } else {
+                // Nuova campagna
+                campaigns.push(campaignData);
+            }
 
             // Salva nel gist
             await saveCampaigns();
@@ -1225,20 +1243,20 @@
             renderCampaigns();
 
             // Chiudi il modal e pulisci il form
-            toggleNewCampaign(); // Usa la funzione esistente per chiudere il modal
+            toggleNewCampaign();
             form.reset();
+            delete form.dataset.editId; // Rimuovi l'ID di modifica
+            
+            // Reset anteprima immagine
+            thumbnailPreview.classList.add('hidden');
+            document.getElementById('thumbnailPlaceholder').classList.remove('hidden');
             
             // Mostra messaggio di successo
-            showSuccess('Campagna salvata con successo');
+            showSuccess(`Campagna ${isEdit ? 'modificata' : 'creata'} con successo`);
 
         } catch (error) {
             console.error('Errore nel salvataggio della campagna:', error);
-            if (error.response?.status === 401) {
-                showError('Token non valido. Controlla le impostazioni.');
-                toggleSettings();
-            } else {
-                showError('Errore nel salvataggio della campagna');
-            }
+            showError('Errore nel salvataggio della campagna');
         }
     }
 
@@ -1306,16 +1324,33 @@
     // Aggiungi queste funzioni per gestire le immagini
     async function handleThumbnailChange(event) {
         const file = event.target.files[0];
-        if (file) {
-            try {
-                const thumbnail = await handleImageUpload(file);
-                document.getElementById('thumbnailPreview').src = thumbnail;
-                document.getElementById('thumbnailPreview').classList.remove('hidden');
-                document.getElementById('thumbnailPlaceholder').classList.add('hidden');
-            } catch (error) {
-                console.error('Errore nel caricamento dell\'immagine:', error);
-                showError('Errore nel caricamento dell\'immagine');
-            }
+        if (!file) return;
+
+        try {
+            const preview = document.getElementById('thumbnailPreview');
+            const placeholder = document.getElementById('thumbnailPlaceholder');
+            
+            // Mostra un'anteprima immediata
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+
+            // Comprimi l'immagine in background
+            const compressedImage = await handleImageUpload(file);
+            preview.src = compressedImage; // Aggiorna con l'immagine compressa
+        } catch (error) {
+            console.error('Errore nel caricamento dell\'immagine:', error);
+            showError('Errore nel caricamento dell\'immagine');
+            
+            // Reset in caso di errore
+            const preview = document.getElementById('thumbnailPreview');
+            const placeholder = document.getElementById('thumbnailPlaceholder');
+            preview.classList.add('hidden');
+            placeholder.classList.remove('hidden');
         }
     }
 
