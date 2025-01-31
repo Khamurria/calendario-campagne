@@ -831,10 +831,10 @@
             const gistId = localStorage.getItem('calendarGistId');
             const token = getGitHubToken();
             
-            console.log('Loading campaigns with gistId:', gistId);
-            
             if (!gistId || !token) {
-                console.error('Manca gistId o token');
+                console.log('Manca gistId o token, ma non apro le impostazioni');
+                campaigns = []; // Inizializza un array vuoto
+                currentDate = new Date(); // Imposta la data corrente
                 return;
             }
 
@@ -844,18 +844,22 @@
                 }
             });
 
-            console.log('Gist response:', response.data);
-
             if (response.data.files['calendar_data.json']) {
                 const content = JSON.parse(response.data.files['calendar_data.json'].content);
                 campaigns = content.campaigns || [];
                 if (content.currentDate) {
                     currentDate = new Date(content.currentDate.year, content.currentDate.month);
+                } else {
+                    currentDate = new Date();
                 }
+            } else {
+                campaigns = [];
+                currentDate = new Date();
             }
         } catch (error) {
             console.error('Errore nel caricamento delle campagne:', error);
-            throw error;
+            campaigns = [];
+            currentDate = new Date();
         }
     }
 
@@ -869,7 +873,64 @@
 
     // Funzioni di rendering
     function renderCalendar() {
-        // Implementa la logica per renderizzare il calendario
+        const calendar = document.getElementById('calendar');
+        const monthTitle = document.getElementById('currentMonth');
+        
+        if (!currentDate) {
+            currentDate = new Date();
+        }
+        
+        const monthNames = [
+            'Gennaio', 'Febbraio', 'Marzo', 'Aprile',
+            'Maggio', 'Giugno', 'Luglio', 'Agosto',
+            'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+        ];
+        
+        monthTitle.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+        calendar.innerHTML = '';
+        
+        const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        
+        // Celle vuote iniziali
+        for (let i = 0; i < firstDay.getDay(); i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'calendar-cell p-3';
+            calendar.appendChild(emptyCell);
+        }
+        
+        // Celle con date
+        for (let date = 1; date <= lastDay.getDate(); date++) {
+            const cell = document.createElement('div');
+            cell.className = 'calendar-cell p-3';
+            
+            const dateDiv = document.createElement('div');
+            dateDiv.className = 'date-number';
+            dateDiv.textContent = date;
+            cell.appendChild(dateDiv);
+            
+            // Eventi del giorno
+            const currentYear = currentDate.getFullYear();
+            const currentMonth = currentDate.getMonth() + 1;
+            const currentDateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+            
+            const dayEvents = campaigns.filter(campaign => {
+                return campaign.startDate <= currentDateStr && campaign.endDate >= currentDateStr;
+            });
+            
+            if (dayEvents.length > 0) {
+                const eventsContainer = document.createElement('div');
+                eventsContainer.className = 'space-y-2 overflow-y-auto max-h-[140px]';
+                
+                dayEvents.forEach(campaign => {
+                    // ... resto del codice per renderizzare gli eventi ...
+                });
+                
+                cell.appendChild(eventsContainer);
+            }
+            
+            calendar.appendChild(cell);
+        }
     }
 
     function renderCampaigns() {
@@ -950,21 +1011,10 @@
     // Funzione di inizializzazione migliorata
     async function initializeApp() {
         try {
-            // Verifica se c'è un token
-            const token = getGitHubToken();
-            if (!token) {
-                console.log('Token non trovato, mostra il modal delle impostazioni');
-                toggleSettings();
-                return;
-            }
-
             // Carica le campagne dal gist
             await loadCampaigns();
             
-            // Log per debug
-            console.log('Campagne caricate:', campaigns);
-            
-            // Renderizza sia il calendario che la lista
+            // Renderizza il calendario e le campagne
             renderCalendar();
             renderCampaigns();
         } catch (error) {
@@ -1134,6 +1184,17 @@
         localStorage.setItem('githubToken', token);
         toggleSettings();
         initializeApp(); // Ricarica l'app con il nuovo token
+    }
+
+    // Assicurati che le funzioni di navigazione del calendario funzionino
+    function prevMonth() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar();
+    }
+
+    function nextMonth() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
     }
     </script>
 </body>
