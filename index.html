@@ -493,7 +493,7 @@
                                 class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
                             <i class="fas fa-share-alt mr-2"></i>Condividi
                         </button>
-                        <button onclick="openTokenSettings()" 
+                        <button onclick="toggleSettings()" 
                                 class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium">
                             <i class="fas fa-cog mr-2"></i>Impostazioni
                         </button>
@@ -688,6 +688,75 @@
         </div>
     </main>
 
+    <!-- Modal Impostazioni -->
+    <div id="settingsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Impostazioni</h3>
+                <button onclick="toggleSettings()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form onsubmit="saveToken(event)">
+                <div class="mb-6 space-y-4">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-blue-800 mb-2">Token di accesso</h3>
+                        <p class="text-blue-700">
+                            Per ottenere il token di accesso, contattare l'amministratore del sistema.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label for="githubToken" class="block text-sm font-medium text-gray-700 mb-1">
+                            Token GitHub
+                        </label>
+                        <input type="password" 
+                               id="githubToken" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               placeholder="Inserisci il token GitHub">
+                        <div id="tokenError" class="text-red-600 text-sm mt-1 hidden"></div>
+                    </div>
+
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h4 class="text-gray-700 font-medium">Verifica Dati</h4>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Controlla lo stato del salvataggio dei dati
+                                </p>
+                            </div>
+                            <button onclick="testGistSaving()" 
+                                    class="px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors text-sm font-medium">
+                                <i class="fas fa-sync-alt mr-2"></i>Verifica Salvataggio
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <h4 class="text-red-600 font-medium mb-2">Zona Pericolo</h4>
+                        <div class="flex items-center justify-between bg-red-50 p-4 rounded-lg">
+                            <div>
+                                <p class="text-sm text-red-800 font-medium">Cancella tutti i dati</p>
+                                <p class="text-xs text-red-600 mt-1">
+                                    Questa azione cancellerà definitivamente tutti i dati salvati nel calendario.
+                                </p>
+                            </div>
+                            <button onclick="clearAllData()" 
+                                    class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                                <i class="fas fa-trash-alt mr-2"></i>Pulisci Gist
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" 
+                        class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                    Salva Impostazioni
+                </button>
+            </form>
+        </div>
+    </div>
+
     <script>
     // Usa nomi consistenti
     const TOKEN_KEY = 'githubToken';
@@ -732,7 +801,18 @@
     }
 
     function toggleSettings() {
-        // Implementa la logica per aprire le impostazioni
+        const modal = document.getElementById('settingsModal');
+        if (modal) {
+            const isHidden = modal.classList.contains('hidden');
+            if (isHidden) {
+                // Popola il campo token se presente
+                const token = localStorage.getItem('githubToken') || '';
+                document.getElementById('githubToken').value = token;
+            }
+            modal.classList.toggle('hidden');
+            // Aggiungi/rimuovi la classe per bloccare lo scroll del body
+            document.body.classList.toggle('overflow-hidden');
+        }
     }
 
     function showSuccess(message) {
@@ -748,8 +828,35 @@
         // Implementa la logica per salvare le campagne
     }
 
-    function loadCampaigns() {
-        // Implementa la logica per caricare le campagne
+    async function loadCampaigns() {
+        try {
+            const gistId = localStorage.getItem('calendarGistId');
+            if (!gistId) {
+                console.error('Nessun Gist ID trovato');
+                return;
+            }
+
+            const response = await axios.get(`https://api.github.com/gists/${gistId}`, {
+                headers: {
+                    'Authorization': `token ${getGitHubToken()}`
+                }
+            });
+
+            if (response.data.files['calendar_data.json']) {
+                const content = JSON.parse(response.data.files['calendar_data.json'].content);
+                campaigns = content.campaigns || [];
+                
+                if (content.currentDate) {
+                    currentDate = new Date(content.currentDate.year, content.currentDate.month);
+                }
+                
+                // Log per debug
+                console.log('Dati caricati dal gist:', content);
+            }
+        } catch (error) {
+            console.error('Errore nel caricamento delle campagne:', error);
+            throw error;
+        }
     }
 
     function updateGist() {
@@ -766,7 +873,69 @@
     }
 
     function renderCampaigns() {
-        // Implementa la logica per renderizzare la lista delle campagne
+        const list = document.getElementById('campaignsList');
+        if (!list) {
+            console.error('Lista campagne non trovata');
+            return;
+        }
+        
+        // Log per debug
+        console.log('Rendering lista campagne:', campaigns);
+        
+        if (!campaigns || campaigns.length === 0) {
+            list.innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                        Nessuna campagna presente
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        list.innerHTML = campaigns.map(campaign => `
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4">
+                    <div class="flex items-center">
+                        ${campaign.thumbnail ? 
+                            `<img src="${campaign.thumbnail}" 
+                                 alt="${campaign.title}" 
+                                 class="w-12 h-12 rounded-lg object-cover mr-3">` : 
+                            `<div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-image text-gray-400"></i>
+                             </div>`
+                        }
+                        <div>
+                            <div class="font-medium text-gray-900">${campaign.title}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm text-gray-500">
+                        ${formatDate(campaign.startDate)} - ${formatDate(campaign.endDate)}
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm text-gray-500">${campaign.type}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium"
+                         style="background-color: ${channelColors[campaign.channel]}20; color: ${channelColors[campaign.channel]}">
+                        ${campaign.channel}
+                    </div>
+                </td>
+                <td class="px-6 py-4 text-center">
+                    ${campaign.isDark ? '<i class="fas fa-circle text-gray-900"></i>' : '-'}
+                </td>
+                <td class="px-6 py-4">
+                    ${campaign.link ? `
+                        <a href="${campaign.link}" target="_blank" class="text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-external-link-alt mr-1"></i>Link
+                        </a>
+                    ` : '-'}
+                </td>
+            </tr>
+        `).join('');
     }
 
     // Funzioni di utilità
@@ -780,30 +949,26 @@
 
     // Funzione di inizializzazione migliorata
     async function initializeApp() {
-        const token = getGitHubToken();
-        console.log('Token presente:', !!token);
-        
-        if (!token || !(await validateToken(token))) {
-            console.log('Token non valido o mancante');
-            openTokenSettings();
-            return;
-        }
-        
         try {
-            console.log('Caricamento campagne...');
-            await loadCampaigns();
-            console.log('Campagne caricate:', campaigns.length);
-            
-            // Se non c'è una data salvata, usa la data corrente
-            if (!currentDate) {
-                currentDate = new Date();
+            // Verifica se c'è un token
+            const token = getGitHubToken();
+            if (!token) {
+                console.log('Token non trovato, mostra il modal delle impostazioni');
+                toggleSettings();
+                return;
             }
+
+            // Carica le campagne dal gist
+            await loadCampaigns();
             
-            // Renderizza subito il calendario e le campagne
+            // Log per debug
+            console.log('Campagne caricate:', campaigns);
+            
+            // Renderizza sia il calendario che la lista
             renderCalendar();
             renderCampaigns();
         } catch (error) {
-            console.error('Errore inizializzazione:', error);
+            console.error('Errore nell\'inizializzazione:', error);
             showError('Errore nel caricamento dei dati');
         }
     }
