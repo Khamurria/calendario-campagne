@@ -643,15 +643,16 @@
         <div class="container mx-auto px-6 py-6">
             <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
                 <table class="min-w-full">
-                    <thead>
-                        <tr class="border-b-2 border-gray-200">
-                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">TITOLO</th>
-                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">PERIODO</th>
-                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">TIPO</th>
-                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">CANALE</th>
-                            <th class="text-center py-3 px-4 text-sm font-semibold text-gray-600">DARK</th>
-                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">LINK</th>
-                            <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">AZIONI</th>
+                    <!-- Intestazione tabella -->
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Titolo</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Periodo</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Canale</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Dark</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
                         </tr>
                     </thead>
                     <tbody id="campaignsList">
@@ -820,8 +821,49 @@
     }
 
     // Funzioni di gestione dati
-    function saveCampaigns() {
-        // Implementa la logica per salvare le campagne
+    async function saveCampaigns() {
+        try {
+            const gistId = localStorage.getItem('calendarGistId');
+            if (!gistId) {
+                throw new Error('Nessun Gist ID trovato');
+            }
+
+            const data = {
+                campaigns: campaigns,
+                currentDate: {
+                    year: currentDate.getFullYear(),
+                    month: currentDate.getMonth()
+                },
+                lastUpdate: new Date().toISOString()
+            };
+
+            const response = await axios({
+                method: 'PATCH',
+                url: `https://api.github.com/gists/${gistId}`,
+                headers: {
+                    'Authorization': `token ${getGitHubToken()}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                data: {
+                    files: {
+                        'calendar_data.json': {
+                            content: JSON.stringify(data, null, 2)
+                        }
+                    }
+                }
+            });
+
+            // Verifica che il salvataggio sia avvenuto correttamente
+            if (response.status === 200) {
+                console.log('Dati salvati con successo');
+                return true;
+            } else {
+                throw new Error('Errore nel salvataggio dei dati');
+            }
+        } catch (error) {
+            console.error('Errore nel salvataggio:', error);
+            throw error;
+        }
     }
 
     async function loadCampaigns() {
@@ -964,7 +1006,7 @@
         if (!campaigns || campaigns.length === 0) {
             list.innerHTML = `
                 <tr>
-                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">
                         Nessuna campagna presente
                     </td>
                 </tr>
@@ -972,18 +1014,16 @@
             return;
         }
 
-        // Ordina le campagne per data di inizio
-        const sortedCampaigns = [...campaigns].sort((a, b) => 
-            new Date(a.startDate) - new Date(b.startDate)
-        );
-
-        list.innerHTML = sortedCampaigns.map(campaign => `
+        list.innerHTML = campaigns.map(campaign => `
             <tr class="hover:bg-gray-50 transition-colors">
                 <td class="px-6 py-4">
                     <div class="flex items-center">
-                        <div class="w-2 h-2 rounded-full mr-3" 
-                             style="background-color: ${channelColors[campaign.channel]}">
-                        </div>
+                        ${campaign.thumbnail ? 
+                            `<img src="${campaign.thumbnail}" alt="${campaign.title}" class="w-12 h-12 rounded-lg object-cover mr-3">` :
+                            `<div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-image text-gray-400"></i>
+                             </div>`
+                        }
                         <div>
                             <div class="font-medium text-gray-900">${campaign.title}</div>
                             <div class="text-sm text-gray-500">${campaign.type}</div>
@@ -994,6 +1034,9 @@
                     <div class="text-sm text-gray-500">
                         ${formatDate(campaign.startDate)} - ${formatDate(campaign.endDate)}
                     </div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm text-gray-500">${campaign.type}</div>
                 </td>
                 <td class="px-6 py-4">
                     <div class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -1023,7 +1066,12 @@
 
     // Funzioni di utilità
     function formatDate(dateStr) {
-        // Implementa la logica per formattare una data
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
     }
 
     function getGitHubToken() {
