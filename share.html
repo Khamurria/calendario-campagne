@@ -4,18 +4,127 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendario Campagne - Visualizzazione Condivisa</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto px-4 py-8">
-        <div id="calendar"></div>
-        <div id="campaignsList"></div>
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-900" id="currentMonth"></h2>
+            </div>
+            <!-- La legenda verrà inserita qui dal JavaScript -->
+            <div id="calendar" class="grid grid-cols-7 gap-2"></div>
+        </div>
     </div>
 
     <script>
         let campaigns = [];
+        let currentDate = new Date();
+
+        // Definizione dei colori per i canali social
+        const channelColors = {
+            Facebook: '#1877F2',     // Blu Facebook
+            Instagram: '#E4405F',    // Rosa Instagram
+            LinkedIn: '#0A66C2',     // Blu LinkedIn
+            YouTube: '#FF0000',      // Rosso YouTube
+            TikTok: '#000000',       // Nero TikTok
+            Pinterest: '#E60023',    // Rosso Pinterest
+            Twitter: '#1DA1F2',      // Blu Twitter
+            Blog: '#FF6B00',         // Arancione
+            Newsletter: '#6B3FA0',   // Viola
+            'E-commerce': '#00C853', // Verde
+            Marketplace: '#FFD600',  // Giallo
+            Other: '#78909C'         // Grigio blu
+        };
+
+        function getChannelColorWithOpacity(channel, opacity = 1) {
+            const color = channelColors[channel] || channelColors.Other;
+            if (opacity === 1) return color;
+            const r = parseInt(color.slice(1,3), 16);
+            const g = parseInt(color.slice(3,5), 16);
+            const b = parseInt(color.slice(5,7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+        }
+
+        function renderChannelsLegend() {
+            const legendContainer = document.createElement('div');
+            legendContainer.className = 'mb-6 flex flex-wrap gap-4';
+            
+            Object.entries(channelColors).forEach(([channel, color]) => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center space-x-2';
+                item.innerHTML = `
+                    <div class="w-3 h-3 rounded-full" style="background-color: ${color}"></div>
+                    <span class="text-sm text-gray-700">${channel}</span>
+                `;
+                legendContainer.appendChild(item);
+            });
+
+            // Inserisci la legenda prima del calendario
+            const calendar = document.getElementById('calendar');
+            calendar.parentElement.insertBefore(legendContainer, calendar);
+        }
+
+        function renderCalendar() {
+            const calendar = document.getElementById('calendar');
+            const monthTitle = document.getElementById('currentMonth');
+            
+            const monthNames = [
+                'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+                'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+            ];
+            const dayNames = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+            
+            monthTitle.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+            calendar.innerHTML = '';
+
+            // Aggiungi intestazioni giorni
+            dayNames.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'text-center font-medium text-gray-700 py-2';
+                dayHeader.textContent = day;
+                calendar.appendChild(dayHeader);
+            });
+
+            const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            
+            // Celle vuote iniziali
+            for (let i = 0; i < firstDay.getDay(); i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'p-2 border border-gray-200 rounded bg-gray-50';
+                calendar.appendChild(emptyCell);
+            }
+
+            // Giorni del mese
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const cell = document.createElement('div');
+                cell.className = 'p-2 border border-gray-200 rounded min-h-[100px] bg-white';
+                
+                const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const campaignsForDay = campaigns.filter(c => 
+                    dateStr >= c.startDate && dateStr <= c.endDate
+                );
+
+                cell.innerHTML = `
+                    <div class="font-medium text-gray-700 mb-1">${day}</div>
+                    <div class="space-y-1">
+                        ${campaignsForDay.map(campaign => `
+                            <div class="px-2 py-1 rounded text-xs font-medium truncate"
+                                 style="background-color: ${getChannelColorWithOpacity(campaign.channel, 0.2)};
+                                        color: ${channelColors[campaign.channel]};
+                                        border-left: 3px solid ${channelColors[campaign.channel]}">
+                                ${campaign.title}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                calendar.appendChild(cell);
+            }
+        }
 
         async function loadSharedCalendar() {
             try {
@@ -30,8 +139,8 @@
                 if (response.status === 200 && response.data.files['calendar_data.json']) {
                     const content = JSON.parse(response.data.files['calendar_data.json'].content);
                     campaigns = content.campaigns || [];
+                    renderChannelsLegend();
                     renderCalendar();
-                    renderCampaigns();
                 }
             } catch (error) {
                 console.error('Errore nel caricamento del calendario:', error);
