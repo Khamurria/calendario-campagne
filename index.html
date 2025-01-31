@@ -1855,25 +1855,111 @@ ${campaign.link ? `Link: ${campaign.link}` : ''}`.trim();
     document.addEventListener('DOMContentLoaded', checkSharedCalendar);
 
     function renderChannelsLegend() {
+        // Rimuovi eventuali legende esistenti
+        const existingLegends = document.querySelectorAll('.channels-legend');
+        existingLegends.forEach(legend => legend.remove());
+
+        // Crea una singola legenda sopra il calendario
         const legendContainer = document.createElement('div');
-        legendContainer.className = 'mt-8 bg-white rounded-lg shadow-lg p-4';
+        legendContainer.className = 'channels-legend mb-6 flex flex-wrap gap-4';
         
-        legendContainer.innerHTML = `
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Legenda Canali</h3>
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                ${Object.entries(channelColors)
-                    .map(([channel, color]) => `
-                        <div class="flex items-center space-x-2">
-                            <div class="w-4 h-4 rounded-full" style="background-color: ${color}"></div>
-                            <span class="text-sm text-gray-700">${channel}</span>
-                        </div>
-                    `).join('')}
+        Object.entries(channelColors).forEach(([channel, color]) => {
+            const item = document.createElement('div');
+            item.className = 'flex items-center space-x-2';
+            item.innerHTML = `
+                <div class="w-3 h-3 rounded-full" style="background-color: ${color}"></div>
+                <span class="text-sm text-gray-700">${channel}</span>
+            `;
+            legendContainer.appendChild(item);
+        });
+
+        // Inserisci la legenda solo prima del calendario
+        const calendar = document.getElementById('calendar');
+        calendar.parentElement.insertBefore(legendContainer, calendar);
+    }
+
+    // Modifica la sezione dei canali nell'header
+    function renderChannelButtons() {
+        const channelsContainer = document.getElementById('channels-container');
+        channelsContainer.innerHTML = `
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-600">Canali:</span>
+                ${Object.entries(channelColors).map(([channel, color]) => `
+                    <button class="flex items-center space-x-2 px-3 py-1 rounded-lg hover:bg-gray-100">
+                        <div class="w-3 h-3 rounded-full" style="background-color: ${color}"></div>
+                        <span class="text-sm text-gray-700">${channel}</span>
+                    </button>
+                `).join('')}
+                <div class="flex items-center space-x-2 ml-4">
+                    <span class="text-gray-600">Dark</span>
+                    <i class="fas fa-moon text-gray-900"></i>
+                </div>
             </div>
         `;
+    }
 
-        // Trova il container appropriato e aggiungi la legenda
-        const mainContainer = document.querySelector('main');
-        mainContainer.appendChild(legendContainer);
+    // Modifica la funzione che renderizza le campagne nel calendario
+    function renderCalendarEvents(cell, date) {
+        const campaignsForDay = campaigns.filter(campaign => 
+            date >= new Date(campaign.startDate) && 
+            date <= new Date(campaign.endDate)
+        );
+
+        return campaignsForDay.map(campaign => `
+            <div class="px-2 py-1 rounded text-xs font-medium truncate flex items-center"
+                 style="background-color: ${getChannelColorWithOpacity(campaign.channel, 0.2)};
+                        border-left: 3px solid ${channelColors[campaign.channel]}">
+                <span class="flex-grow" style="color: ${channelColors[campaign.channel]}">${campaign.title}</span>
+                ${campaign.isDark ? '<i class="fas fa-moon text-gray-900 ml-1"></i>' : ''}
+            </div>
+        `).join('');
+    }
+
+    // Modifica la funzione che renderizza la tabella delle campagne
+    function renderCampaignRow(campaign) {
+        return `
+            <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4">
+                    <div class="flex items-center">
+                        ${campaign.thumbnail ? `
+                            <img src="${campaign.thumbnail}" alt="" class="w-10 h-10 rounded-lg mr-3">
+                        ` : ''}
+                        <div>
+                            <div class="font-medium text-gray-900">${campaign.title}</div>
+                            <div class="text-sm text-gray-500">${campaign.type || '-'}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${formatDate(campaign.startDate)} - ${formatDate(campaign.endDate)}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-500">
+                    ${campaign.type || '-'}
+                </td>
+                <td class="px-6 py-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 rounded-full" 
+                             style="background-color: ${channelColors[campaign.channel]}">
+                        </div>
+                        <span class="text-sm text-gray-700">${campaign.channel}</span>
+                    </div>
+                </td>
+                <td class="px-6 py-4 text-center">
+                    ${campaign.isDark ? '<i class="fas fa-moon text-gray-900"></i>' : '-'}
+                </td>
+                <td class="px-6 py-4">
+                    ${campaign.link ? `
+                        <a href="${campaign.link}" target="_blank" 
+                           class="text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    ` : '-'}
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <!-- ... resto del codice ... -->
+                </td>
+            </tr>
+        `;
     }
     </script>
 </body>
