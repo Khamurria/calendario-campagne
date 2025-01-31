@@ -490,8 +490,9 @@
                     <i class="fas fa-plus mr-2"></i>Nuova Campagna
                 </button>
                         <button onclick="shareCalendar()" 
-                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
-                            <i class="fas fa-share-alt mr-2"></i>Condividi
+                                class="btn-primary flex items-center space-x-2">
+                            <i class="fas fa-share-alt"></i>
+                            <span>Condividi</span>
                         </button>
                         <button onclick="toggleSettings()" 
                                 class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium">
@@ -735,10 +736,25 @@
                     </div>
                 </div>
 
-                <button type="submit" 
-                        class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors">
-                    Salva Impostazioni
-                </button>
+                <div class="flex justify-between mt-6">
+                    <div>
+                        <button type="button" 
+                                onclick="testGistSaving()" 
+                                class="btn-secondary">
+                            Verifica Salvataggio
+                        </button>
+                        <button type="button" 
+                                onclick="clearAllData()" 
+                                class="btn-danger ml-2">
+                            Pulisci Gist
+                        </button>
+                    </div>
+                    <button type="button" 
+                            onclick="toggleSettings()" 
+                            class="btn-secondary">
+                        Chiudi
+                    </button>
+                </div>
             </form>
         </div>
     </div>
@@ -1048,11 +1064,6 @@
                 </td>
                 <td class="px-6 py-4 text-right">
                     <div class="flex justify-end space-x-2">
-                        <button onclick="shareCampaign('${campaign.id}')" 
-                                class="text-green-600 hover:text-green-800 p-1"
-                                title="Condividi">
-                            <i class="fas fa-share-alt"></i>
-                        </button>
                         <button onclick="editCampaign('${campaign.id}')" 
                                 class="text-blue-600 hover:text-blue-800 p-1"
                                 title="Modifica">
@@ -1103,9 +1114,31 @@
         }
     }
 
-    // Funzioni di Condivisione
+    // Funzione per condividere il link al calendario
     async function shareCalendar() {
-        // Implementa la logica per condividere il calendario
+        try {
+            const gistId = localStorage.getItem('calendarGistId');
+            if (!gistId) {
+                showError('Nessun calendario da condividere');
+                return;
+            }
+
+            const shareUrl = `${window.location.origin}${window.location.pathname}?gist=${gistId}`;
+            
+            if (navigator.share) {
+                await navigator.share({
+                    title: 'Calendario Campagne',
+                    text: 'Ecco il link al calendario delle campagne:',
+                    url: shareUrl
+                });
+            } else {
+                await navigator.clipboard.writeText(shareUrl);
+                showSuccess('Link copiato negli appunti');
+            }
+        } catch (error) {
+            console.error('Errore nella condivisione:', error);
+            showError('Errore nella condivisione del calendario');
+        }
     }
 
     // Funzioni di gestione campagne
@@ -1287,9 +1320,20 @@
                 return;
             }
 
-            const testData = { test: true, timestamp: new Date().toISOString() };
-            
-            const response = await axios({
+            // Prima verifica se possiamo leggere il gist
+            const readResponse = await axios.get(`https://api.github.com/gists/${gistId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (readResponse.status !== 200) {
+                throw new Error('Impossibile leggere il gist');
+            }
+
+            // Poi verifica se possiamo scrivere
+            const writeResponse = await axios({
                 method: 'PATCH',
                 url: `https://api.github.com/gists/${gistId}`,
                 headers: {
@@ -1298,19 +1342,25 @@
                 },
                 data: {
                     files: {
-                        'test_save.json': {
-                            content: JSON.stringify(testData)
+                        'test.json': {
+                            content: JSON.stringify({ test: true, date: new Date().toISOString() })
                         }
                     }
                 }
             });
 
-            if (response.status === 200) {
-                showSuccess('Test di salvataggio completato con successo');
+            if (writeResponse.status === 200) {
+                showSuccess('Verifica completata: lettura e scrittura funzionanti');
             }
         } catch (error) {
-            console.error('Errore nel test di salvataggio:', error);
-            showError('Errore nel test di salvataggio');
+            console.error('Errore nella verifica:', error);
+            if (error.response?.status === 401) {
+                showError('Token non valido o scaduto');
+            } else if (error.response?.status === 404) {
+                showError('Gist non trovato');
+            } else {
+                showError('Errore nella verifica del salvataggio');
+            }
         }
     }
 
@@ -1321,7 +1371,7 @@
 
     // Aggiungi questa funzione per la pulizia totale del gist
     async function clearAllData() {
-        if (!confirm('Sei sicuro di voler cancellare tutti i dati? Questa azione non può essere annullata.')) {
+        if (!confirm('ATTENZIONE: Stai per eliminare tutti i dati. Questa azione non può essere annullata. Vuoi continuare?')) {
             return;
         }
 
@@ -1330,43 +1380,56 @@
             const token = getGitHubToken();
 
             if (!gistId || !token) {
-                throw new Error('Mancano le credenziali necessarie');
+                showError('Mancano le credenziali necessarie');
+                return;
             }
 
+            // Svuota l'array delle campagne
             campaigns = [];
-            
+
+            // Prepara i dati vuoti
+            const emptyData = {
+                campaigns: [],
+                currentDate: {
+                    year: new Date().getFullYear(),
+                    month: new Date().getMonth()
+                },
+                lastUpdate: new Date().toISOString()
+            };
+
+            // Salva il gist vuoto
             const response = await axios({
                 method: 'PATCH',
                 url: `https://api.github.com/gists/${gistId}`,
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/vnd.github.v3+json'
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
                 },
                 data: {
                     files: {
                         'calendar_data.json': {
-                            content: JSON.stringify({
-                                campaigns: [],
-                                currentDate: {
-                                    year: new Date().getFullYear(),
-                                    month: new Date().getMonth()
-                                },
-                                lastUpdate: new Date().toISOString()
-                            })
+                            content: JSON.stringify(emptyData, null, 2)
                         }
                     }
                 }
             });
 
             if (response.status === 200) {
+                // Aggiorna l'interfaccia
                 renderCalendar();
                 renderCampaigns();
                 showSuccess('Tutti i dati sono stati cancellati con successo');
-                toggleSettings();
+                
+                // Chiudi il modal delle impostazioni
+                const settingsModal = document.getElementById('settingsModal');
+                if (settingsModal) {
+                    settingsModal.classList.add('hidden');
+                }
             }
         } catch (error) {
             console.error('Errore nella pulizia dei dati:', error);
-            showError('Errore nella cancellazione dei dati');
+            showError('Errore nella cancellazione dei dati. Controlla la console per i dettagli.');
         }
     }
 
@@ -1542,6 +1605,26 @@ ${campaign.link ? `Link: ${campaign.link}` : ''}`.trim();
             showError('Errore nella condivisione della campagna');
         }
     }
+
+    // Aggiungi questa funzione all'inizio del tuo script
+    async function checkSharedCalendar() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedGistId = urlParams.get('gist');
+        
+        if (sharedGistId) {
+            // Se c'è un gistId nell'URL, salvalo nelle impostazioni
+            localStorage.setItem('calendarGistId', sharedGistId);
+            
+            // Ricarica i dati
+            await loadCampaigns();
+            
+            // Pulisci l'URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+
+    // Chiama la funzione quando la pagina si carica
+    document.addEventListener('DOMContentLoaded', checkSharedCalendar);
     </script>
 </body>
 </html>
