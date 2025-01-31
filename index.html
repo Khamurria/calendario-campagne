@@ -677,82 +677,45 @@
 
     <!-- Modal Impostazioni -->
     <div id="settingsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-gray-900">Impostazioni</h3>
                 <button onclick="toggleSettings()" class="text-gray-400 hover:text-gray-600">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form onsubmit="saveToken(event)">
-                <div class="mb-6 space-y-4">
-                    <div class="bg-blue-50 p-4 rounded-lg">
-                        <h3 class="font-semibold text-blue-800 mb-2">Token di accesso</h3>
-                        <p class="text-blue-700">
-                            Per ottenere il token di accesso, contattare l'amministratore del sistema.
-                        </p>
-                    </div>
 
-                    <div>
-                        <label for="githubToken" class="block text-sm font-medium text-gray-700 mb-1">
-                            Token GitHub
-                        </label>
-                        <input type="password" 
-                               id="githubToken" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                               placeholder="Inserisci il token GitHub">
-                        <div id="tokenError" class="text-red-600 text-sm mt-1 hidden"></div>
-                    </div>
-
-                    <div class="mt-6 pt-6 border-t border-gray-200">
-                        <div class="flex items-center justify-between mb-4">
-                            <div>
-                                <h4 class="text-gray-700 font-medium">Verifica Dati</h4>
-                                <p class="text-xs text-gray-500 mt-1">
-                                    Controlla lo stato del salvataggio dei dati
-                                </p>
-                            </div>
-                            <button type="button" onclick="testGistSaving()" 
-                                    class="px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors text-sm font-medium">
-                                <i class="fas fa-sync-alt mr-2"></i>Verifica Salvataggio
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="mt-6 pt-6 border-t border-gray-200">
-                        <h4 class="text-red-600 font-medium mb-2">Zona Pericolo</h4>
-                        <div class="flex items-center justify-between bg-red-50 p-4 rounded-lg">
-                            <div>
-                                <p class="text-sm text-red-800 font-medium">Cancella tutti i dati</p>
-                                <p class="text-xs text-red-600 mt-1">
-                                    Questa azione cancellerà definitivamente tutti i dati salvati nel calendario.
-                                </p>
-                            </div>
-                            <button type="button" onclick="clearAllData()" 
-                                    class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                                <i class="fas fa-trash-alt mr-2"></i>Pulisci Gist
-                            </button>
-                        </div>
-                    </div>
+            <form onsubmit="saveSettings(event)" class="space-y-6">
+                <!-- Token GitHub -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Token GitHub</label>
+                    <input type="password" 
+                           id="githubToken" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md"
+                           value="${localStorage.getItem('githubToken') || ''}"
+                           placeholder="Inserisci il token GitHub">
                 </div>
 
-                <div class="flex justify-between mt-6">
-                    <div>
-                        <button type="button" 
-                                onclick="testGistSaving()" 
-                                class="btn-secondary">
-                            Verifica Salvataggio
-                        </button>
-                        <button type="button" 
-                                onclick="clearAllData()" 
-                                class="btn-danger ml-2">
-                            Pulisci Gist
-                        </button>
-                    </div>
+                <!-- Gist ID -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Gist ID</label>
+                    <input type="text" 
+                           id="gistId" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md"
+                           value="${localStorage.getItem('calendarGistId') || ''}"
+                           placeholder="Inserisci l'ID del gist">
+                </div>
+
+                <!-- Pulsanti -->
+                <div class="flex justify-between pt-4">
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Salva
+                    </button>
                     <button type="button" 
-                            onclick="toggleSettings()" 
-                            class="btn-secondary">
-                        Chiudi
+                            onclick="clearAllData()" 
+                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                        Pulisci Gist
                     </button>
                 </div>
             </form>
@@ -1123,15 +1086,18 @@
                 return;
             }
 
+            // Crea l'URL completo con il gistId
             const shareUrl = `${window.location.origin}${window.location.pathname}?gist=${gistId}`;
-            
+
+            // Prova a usare l'API di condivisione nativa
             if (navigator.share) {
                 await navigator.share({
                     title: 'Calendario Campagne',
-                    text: 'Ecco il link al calendario delle campagne:',
+                    text: 'Visualizza il calendario delle campagne:',
                     url: shareUrl
                 });
             } else {
+                // Fallback: copia negli appunti
                 await navigator.clipboard.writeText(shareUrl);
                 showSuccess('Link copiato negli appunti');
             }
@@ -1316,23 +1282,42 @@
             const token = getGitHubToken();
 
             if (!gistId || !token) {
-                showError('Mancano le credenziali necessarie');
+                showError('Inserisci prima il token GitHub e il Gist ID');
                 return;
             }
 
-            // Prima verifica se possiamo leggere il gist
-            const readResponse = await axios.get(`https://api.github.com/gists/${gistId}`, {
+            showSuccess('Verifica in corso...');
+
+            // Step 1: Verifica il token
+            const userResponse = await axios.get('https://api.github.com/user', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });
 
-            if (readResponse.status !== 200) {
-                throw new Error('Impossibile leggere il gist');
+            if (userResponse.status !== 200) {
+                throw new Error('Token GitHub non valido');
             }
 
-            // Poi verifica se possiamo scrivere
+            // Step 2: Verifica accesso al gist
+            const gistResponse = await axios.get(`https://api.github.com/gists/${gistId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (gistResponse.status !== 200) {
+                throw new Error('Gist ID non valido o non accessibile');
+            }
+
+            // Step 3: Verifica permessi di scrittura
+            const testContent = {
+                test: true,
+                timestamp: new Date().toISOString()
+            };
+
             const writeResponse = await axios({
                 method: 'PATCH',
                 url: `https://api.github.com/gists/${gistId}`,
@@ -1343,23 +1328,26 @@
                 data: {
                     files: {
                         'test.json': {
-                            content: JSON.stringify({ test: true, date: new Date().toISOString() })
+                            content: JSON.stringify(testContent)
                         }
                     }
                 }
             });
 
             if (writeResponse.status === 200) {
-                showSuccess('Verifica completata: lettura e scrittura funzionanti');
+                showSuccess('✅ Verifica completata con successo:\n- Token valido\n- Gist accessibile\n- Permessi di scrittura OK');
             }
+
         } catch (error) {
             console.error('Errore nella verifica:', error);
             if (error.response?.status === 401) {
-                showError('Token non valido o scaduto');
+                showError('❌ Token GitHub non valido');
             } else if (error.response?.status === 404) {
-                showError('Gist non trovato');
+                showError('❌ Gist ID non trovato');
+            } else if (error.response?.status === 403) {
+                showError('❌ Permessi insufficienti per accedere al gist');
             } else {
-                showError('Errore nella verifica del salvataggio');
+                showError('❌ Errore nella verifica: ' + (error.message || 'errore sconosciuto'));
             }
         }
     }
@@ -1390,26 +1378,21 @@
             // Prepara i dati vuoti
             const emptyData = {
                 campaigns: [],
-                currentDate: {
-                    year: new Date().getFullYear(),
-                    month: new Date().getMonth()
-                },
                 lastUpdate: new Date().toISOString()
             };
 
-            // Salva il gist vuoto
+            // Aggiorna il gist con i dati vuoti
             const response = await axios({
                 method: 'PATCH',
                 url: `https://api.github.com/gists/${gistId}`,
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Content-Type': 'application/json'
+                    'Accept': 'application/vnd.github.v3+json'
                 },
                 data: {
                     files: {
                         'calendar_data.json': {
-                            content: JSON.stringify(emptyData, null, 2)
+                            content: JSON.stringify(emptyData)
                         }
                     }
                 }
@@ -1420,16 +1403,11 @@
                 renderCalendar();
                 renderCampaigns();
                 showSuccess('Tutti i dati sono stati cancellati con successo');
-                
-                // Chiudi il modal delle impostazioni
-                const settingsModal = document.getElementById('settingsModal');
-                if (settingsModal) {
-                    settingsModal.classList.add('hidden');
-                }
+                toggleSettings();
             }
         } catch (error) {
             console.error('Errore nella pulizia dei dati:', error);
-            showError('Errore nella cancellazione dei dati. Controlla la console per i dettagli.');
+            showError('Errore nella cancellazione dei dati');
         }
     }
 
@@ -1607,17 +1585,30 @@ ${campaign.link ? `Link: ${campaign.link}` : ''}`.trim();
     }
 
     // Aggiungi questa funzione all'inizio del tuo script
+    async function loadSharedCalendar(gistId) {
+        try {
+            const response = await axios.get(`https://api.github.com/gists/${gistId}`);
+            if (response.status === 200 && response.data.files['calendar_data.json']) {
+                const content = JSON.parse(response.data.files['calendar_data.json'].content);
+                campaigns = content.campaigns || [];
+                renderCalendar();
+                renderCampaigns();
+                return true;
+            }
+        } catch (error) {
+            console.error('Errore nel caricamento del calendario condiviso:', error);
+            showError('Errore nel caricamento del calendario condiviso');
+            return false;
+        }
+    }
+
+    // Modifica la funzione checkSharedCalendar
     async function checkSharedCalendar() {
         const urlParams = new URLSearchParams(window.location.search);
         const sharedGistId = urlParams.get('gist');
         
         if (sharedGistId) {
-            // Se c'è un gistId nell'URL, salvalo nelle impostazioni
-            localStorage.setItem('calendarGistId', sharedGistId);
-            
-            // Ricarica i dati
-            await loadCampaigns();
-            
+            await loadSharedCalendar(sharedGistId);
             // Pulisci l'URL
             window.history.replaceState({}, document.title, window.location.pathname);
         }
