@@ -307,39 +307,34 @@
         async function loadSharedCalendar() {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
-                const gistId = urlParams.get('id');
+                const gistId = urlParams.get('gist');
                 
                 if (!gistId) {
-                    throw new Error('ID non trovato nell\'URL');
+                    throw new Error('Nessun calendario specificato');
                 }
 
                 const response = await axios.get(`https://api.github.com/gists/${gistId}`);
-                
-                if (!response.data.files['shared_calendar.json']) {
-                    throw new Error('File del calendario non trovato nel gist');
+                if (response.status === 200 && response.data.files['calendar_data.json']) {
+                    const content = JSON.parse(response.data.files['calendar_data.json'].content);
+                    campaigns = content.campaigns || [];
+                    if (content.currentMonth) {
+                        currentDate = new Date(content.currentMonth.year, content.currentMonth.month);
+                    } else {
+                        currentDate = new Date(); // Usa la data corrente se non specificata
+                    }
+                    renderCalendar();
+                    renderCampaigns();
                 }
-
-                const content = JSON.parse(response.data.files['shared_calendar.json'].content);
-                
-                if (content.expiresAt && new Date(content.expiresAt) < new Date()) {
-                    throw new Error('Il link di condivisione è scaduto');
-                }
-                
-                campaigns = content.campaigns || [];
-                if (content.currentMonth) {
-                    currentDate = new Date(content.currentMonth.year, content.currentMonth.month);
-                } else {
-                    currentDate = new Date(); // Usa la data corrente se non specificata
-                }
-                
-                renderCalendar();
-                renderCampaigns();
             } catch (error) {
-                console.error('Errore nel caricamento del calendario condiviso:', error);
-                const errorMessage = error.message === 'Il link di condivisione è scaduto' 
-                    ? 'Il link di condivisione è scaduto. Richiedi un nuovo link.'
-                    : 'Errore nel caricamento del calendario condiviso';
-                alert(errorMessage);
+                console.error('Errore nel caricamento del calendario:', error);
+                document.body.innerHTML = `
+                    <div class="flex items-center justify-center min-h-screen">
+                        <div class="text-center">
+                            <h1 class="text-2xl font-bold text-red-600 mb-4">Errore</h1>
+                            <p class="text-gray-600">Impossibile caricare il calendario condiviso.</p>
+                        </div>
+                    </div>
+                `;
             }
         }
 
