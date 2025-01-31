@@ -3,21 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendario Campagne - Visualizzazione Condivisa</title>
+    <title>Calendario Campagne - Visualizzazione</title>
     <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body class="bg-gray-100">
-    <div class="container mx-auto px-4 py-8">
-        <div class="bg-white rounded-lg shadow-lg p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-semibold text-gray-900" id="currentMonth"></h2>
+    <!-- Header con logo e titolo -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img src="logo.png" alt="Logo" class="h-10">
+                    <h1 class="text-2xl font-bold text-gray-900">Calendario Campagne</h1>
+                </div>
+                <button onclick="printCalendar()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center">
+                    <i class="fas fa-print mr-2"></i>
+                    Stampa Calendario
+                </button>
             </div>
-            <!-- La legenda verrà inserita qui dal JavaScript -->
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- Navigazione mesi -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div class="flex justify-between items-center mb-6">
+                <button onclick="changeMonth(-1)" class="text-gray-600 hover:text-gray-900">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <h2 class="text-xl font-semibold text-gray-900" id="currentMonth"></h2>
+                <button onclick="changeMonth(1)" class="text-gray-600 hover:text-gray-900">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <!-- Legenda canali -->
+            <div id="channelsLegend" class="flex flex-wrap gap-4 mb-6"></div>
+
+            <!-- Calendario -->
             <div id="calendar" class="grid grid-cols-7 gap-2"></div>
         </div>
-    </div>
+
+        <!-- Lista campagne -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">Campagne del Mese</h2>
+            <div id="campaignsList"></div>
+        </div>
+    </main>
 
     <script>
         let campaigns = [];
@@ -126,6 +159,21 @@
             }
         }
 
+        function renderCampaigns() {
+            const list = document.getElementById('campaignsList');
+            const currentMonth = currentDate.getMonth();
+            const currentYear = currentDate.getFullYear();
+            
+            const monthCampaigns = campaigns.filter(campaign => {
+                const startDate = new Date(campaign.startDate);
+                const endDate = new Date(campaign.endDate);
+                return (startDate.getMonth() === currentMonth && startDate.getFullYear() === currentYear) ||
+                       (endDate.getMonth() === currentMonth && endDate.getFullYear() === currentYear);
+            });
+
+            // ... [resto del codice per il rendering delle campagne] ...
+        }
+
         async function loadSharedCalendar() {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -141,6 +189,7 @@
                     campaigns = content.campaigns || [];
                     renderChannelsLegend();
                     renderCalendar();
+                    renderCampaigns();
                 }
             } catch (error) {
                 console.error('Errore nel caricamento del calendario:', error);
@@ -154,6 +203,32 @@
                 `;
             }
         }
+
+        // Funzione per cambiare mese
+        function changeMonth(delta) {
+            currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + delta, 1);
+            renderCalendar();
+            renderCampaigns();
+        }
+
+        // Funzione per stampare
+        function printCalendar() {
+            window.print();
+        }
+
+        // Stili per la stampa
+        const printStyles = document.createElement('style');
+        printStyles.textContent = `
+            @media print {
+                body { background: white; }
+                header button, 
+                .no-print { display: none !important; }
+                #calendar { break-inside: avoid; }
+                .shadow-lg { box-shadow: none !important; }
+                .campaign-event { break-inside: avoid; }
+            }
+        `;
+        document.head.appendChild(printStyles);
 
         // Carica il calendario quando la pagina si apre
         document.addEventListener('DOMContentLoaded', loadSharedCalendar);

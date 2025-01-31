@@ -632,28 +632,28 @@
             <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
                 <table class="min-w-full">
                     <!-- Intestazione tabella -->
-                    <thead class="bg-gray-50">
+                    <thead class="bg-gray-100 border-b-2 border-gray-200">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left">
-                                <span class="text-sm font-bold text-gray-900 uppercase">Titolo</span>
+                            <th scope="col" class="px-6 py-4 text-left">
+                                <span class="text-base font-extrabold text-gray-900 uppercase tracking-wider">Titolo</span>
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left">
-                                <span class="text-sm font-bold text-gray-900 uppercase">Periodo</span>
+                            <th scope="col" class="px-6 py-4 text-left">
+                                <span class="text-base font-extrabold text-gray-900 uppercase tracking-wider">Periodo</span>
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left">
-                                <span class="text-sm font-bold text-gray-900 uppercase">Tipo</span>
+                            <th scope="col" class="px-6 py-4 text-left">
+                                <span class="text-base font-extrabold text-gray-900 uppercase tracking-wider">Tipo</span>
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left">
-                                <span class="text-sm font-bold text-gray-900 uppercase">Canale</span>
+                            <th scope="col" class="px-6 py-4 text-left">
+                                <span class="text-base font-extrabold text-gray-900 uppercase tracking-wider">Canale</span>
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left">
-                                <span class="text-sm font-bold text-gray-900 uppercase">Dark</span>
+                            <th scope="col" class="px-6 py-4 text-left">
+                                <span class="text-base font-extrabold text-gray-900 uppercase tracking-wider">Dark</span>
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left">
-                                <span class="text-sm font-bold text-gray-900 uppercase">Link</span>
+                            <th scope="col" class="px-6 py-4 text-left">
+                                <span class="text-base font-extrabold text-gray-900 uppercase tracking-wider">Link</span>
                             </th>
-                            <th scope="col" class="px-6 py-3 text-right">
-                                <span class="text-sm font-bold text-gray-900 uppercase">Azioni</span>
+                            <th scope="col" class="px-6 py-4 text-right">
+                                <span class="text-base font-extrabold text-gray-900 uppercase tracking-wider">Azioni</span>
                             </th>
                         </tr>
                     </thead>
@@ -1026,8 +1026,8 @@
                     const darkPart = campaign.isDark ? ' | <span class="dark-dot">•</span>' : '';
 
                     eventDiv.innerHTML = `
-                        <div class="campaign-line text-gray-900">
-                            <span class="font-medium">${titleAndType}</span>
+                        <div class="font-medium text-gray-700 mb-1">${titleAndType}</div>
+                        <div class="space-y-1">
                             ${linkPart}
                             ${darkPart}
                         </div>
@@ -1099,8 +1099,8 @@
                 <td class="px-6 py-4">
                     <div class="text-sm text-gray-500">
                         ${campaign.isDark ? 
-                            '<i class="fas fa-moon text-blue-600"></i>' : 
-                            '<i class="fas fa-sun text-yellow-400"></i>'}
+                            '<i class="fas fa-moon text-gray-900"></i>' : 
+                            '-'}
                     </div>
                 </td>
                 <td class="px-6 py-4">
