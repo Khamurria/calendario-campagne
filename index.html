@@ -1048,6 +1048,10 @@
                 </td>
                 <td class="px-6 py-4 text-right">
                     <div class="flex justify-end space-x-2">
+                        <button onclick="shareCampaign('${campaign.id}')" 
+                                class="text-green-600 hover:text-green-800 p-1">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
                         <button onclick="editCampaign('${campaign.id}')" 
                                 class="text-blue-600 hover:text-blue-800 p-1">
                             <i class="fas fa-edit"></i>
@@ -1271,7 +1275,57 @@
 
     // Aggiungi questa nuova funzione per gestire la verifica del salvataggio
     async function testGistSaving() {
-        // Implementa la logica per testare il salvataggio
+        try {
+            const gistId = localStorage.getItem('calendarGistId');
+            const token = getGitHubToken();
+
+            if (!gistId || !token) {
+                throw new Error('Mancano le credenziali necessarie');
+            }
+
+            // Tenta di leggere il gist
+            const response = await axios.get(`https://api.github.com/gists/${gistId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (response.status === 200) {
+                // Tenta un salvataggio di test
+                const testData = {
+                    test: true,
+                    timestamp: new Date().toISOString()
+                };
+
+                const saveResponse = await axios({
+                    method: 'PATCH',
+                    url: `https://api.github.com/gists/${gistId}`,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    data: {
+                        files: {
+                            'test_save.json': {
+                                content: JSON.stringify(testData)
+                            }
+                        }
+                    }
+                });
+
+                if (saveResponse.status === 200) {
+                    showSuccess('Test di salvataggio completato con successo');
+                }
+            }
+        } catch (error) {
+            console.error('Errore nel test di salvataggio:', error);
+            if (error.response?.status === 401) {
+                showError('Token non valido. Controlla le credenziali.');
+            } else {
+                showError('Errore nel test di salvataggio');
+            }
+        }
     }
 
     // Aggiungi questa funzione per pulire periodicamente i dati
@@ -1281,7 +1335,60 @@
 
     // Aggiungi questa funzione per la pulizia totale del gist
     async function clearAllData() {
-        // Implementa la logica per cancellare completamente il gist
+        if (!confirm('Sei sicuro di voler cancellare tutti i dati? Questa azione non può essere annullata.')) {
+            return;
+        }
+
+        try {
+            const gistId = localStorage.getItem('calendarGistId');
+            const token = getGitHubToken();
+
+            if (!gistId || !token) {
+                throw new Error('Mancano le credenziali necessarie');
+            }
+
+            // Svuota l'array delle campagne
+            campaigns = [];
+            
+            // Salva il gist vuoto
+            const response = await axios({
+                method: 'PATCH',
+                url: `https://api.github.com/gists/${gistId}`,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                data: {
+                    files: {
+                        'calendar_data.json': {
+                            content: JSON.stringify({
+                                campaigns: [],
+                                currentDate: {
+                                    year: new Date().getFullYear(),
+                                    month: new Date().getMonth()
+                                },
+                                lastUpdate: new Date().toISOString()
+                            })
+                        }
+                    }
+                }
+            });
+
+            if (response.status === 200) {
+                // Aggiorna le visualizzazioni
+                renderCalendar();
+                renderCampaigns();
+                showSuccess('Tutti i dati sono stati cancellati con successo');
+                toggleSettings(); // Chiudi il modal delle impostazioni
+            }
+        } catch (error) {
+            console.error('Errore nella pulizia dei dati:', error);
+            if (error.response?.status === 401) {
+                showError('Token non valido. Controlla le credenziali.');
+            } else {
+                showError('Errore nella cancellazione dei dati');
+            }
+        }
     }
 
     // Standardizza la gestione degli errori
@@ -1422,6 +1529,41 @@
         if (modal) {
             modal.classList.remove('hidden');
             document.body.classList.add('overflow-hidden');
+        }
+    }
+
+    // Funzione per la condivisione
+    async function shareCampaign(id) {
+        try {
+            const campaign = campaigns.find(c => c.id === id);
+            if (!campaign) {
+                throw new Error('Campagna non trovata');
+            }
+
+            // Crea il testo da condividere
+            const shareText = `
+Campagna: ${campaign.title}
+Tipo: ${campaign.type}
+Canale: ${campaign.channel}
+Periodo: ${formatDate(campaign.startDate)} - ${formatDate(campaign.endDate)}
+${campaign.link ? `Link: ${campaign.link}` : ''}
+            `.trim();
+
+            // Usa l'API Web Share se disponibile
+            if (navigator.share) {
+                await navigator.share({
+                    title: campaign.title,
+                    text: shareText,
+                    url: window.location.href
+                });
+            } else {
+                // Fallback: copia negli appunti
+                await navigator.clipboard.writeText(shareText);
+                showSuccess('Dettagli campagna copiati negli appunti');
+            }
+        } catch (error) {
+            console.error('Errore nella condivisione:', error);
+            showError('Errore nella condivisione della campagna');
         }
     }
     </script>
