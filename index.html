@@ -832,9 +832,7 @@
             const token = getGitHubToken();
             
             if (!gistId || !token) {
-                console.log('Manca gistId o token, ma non apro le impostazioni');
-                campaigns = []; // Inizializza un array vuoto
-                currentDate = new Date(); // Imposta la data corrente
+                campaigns = []; // Inizializza un array vuoto se mancano le credenziali
                 return;
             }
 
@@ -846,20 +844,31 @@
 
             if (response.data.files['calendar_data.json']) {
                 const content = JSON.parse(response.data.files['calendar_data.json'].content);
-                campaigns = content.campaigns || [];
-                if (content.currentDate) {
-                    currentDate = new Date(content.currentDate.year, content.currentDate.month);
-                } else {
-                    currentDate = new Date();
-                }
-            } else {
-                campaigns = [];
-                currentDate = new Date();
+                
+                // Verifica e filtra le campagne valide
+                campaigns = content.campaigns.filter(campaign => {
+                    return campaign.title && campaign.startDate && campaign.endDate && campaign.channel;
+                });
+
+                // Ordina le campagne per data
+                campaigns.sort((a, b) => {
+                    return new Date(a.startDate) - new Date(b.startDate);
+                });
+
+                // Aggiorna la lista delle campagne
+                renderCampaigns();
+                renderCalendar();
             }
         } catch (error) {
             console.error('Errore nel caricamento delle campagne:', error);
+            if (error.response?.status === 401) {
+                showError('Token non valido. Controlla le impostazioni.');
+            } else if (error.response?.status === 404) {
+                showError('Gist non trovato. Controlla le impostazioni.');
+            } else {
+                showError('Errore nel caricamento dei dati');
+            }
             campaigns = [];
-            currentDate = new Date();
         }
     }
 
@@ -952,14 +961,8 @@
 
     function renderCampaigns() {
         const list = document.getElementById('campaignsList');
-        if (!list) {
-            console.error('Lista campagne non trovata');
-            return;
-        }
-        
-        // Log per debug
-        console.log('Rendering lista campagne:', campaigns);
-        
+        if (!list) return;
+
         if (!campaigns || campaigns.length === 0) {
             list.innerHTML = `
                 <tr>
@@ -971,20 +974,21 @@
             return;
         }
 
-        list.innerHTML = campaigns.map(campaign => `
+        // Ordina le campagne per data di inizio
+        const sortedCampaigns = [...campaigns].sort((a, b) => 
+            new Date(a.startDate) - new Date(b.startDate)
+        );
+
+        list.innerHTML = sortedCampaigns.map(campaign => `
             <tr class="hover:bg-gray-50 transition-colors">
                 <td class="px-6 py-4">
                     <div class="flex items-center">
-                        ${campaign.thumbnail ? 
-                            `<img src="${campaign.thumbnail}" 
-                                 alt="${campaign.title}" 
-                                 class="w-12 h-12 rounded-lg object-cover mr-3">` : 
-                            `<div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center mr-3">
-                                <i class="fas fa-image text-gray-400"></i>
-                             </div>`
-                        }
+                        <div class="w-2 h-2 rounded-full mr-3" 
+                             style="background-color: ${channelColors[campaign.channel]}">
+                        </div>
                         <div>
                             <div class="font-medium text-gray-900">${campaign.title}</div>
+                            <div class="text-sm text-gray-500">${campaign.type}</div>
                         </div>
                     </div>
                 </td>
@@ -992,9 +996,6 @@
                     <div class="text-sm text-gray-500">
                         ${formatDate(campaign.startDate)} - ${formatDate(campaign.endDate)}
                     </div>
-                </td>
-                <td class="px-6 py-4">
-                    <div class="text-sm text-gray-500">${campaign.type}</div>
                 </td>
                 <td class="px-6 py-4">
                     <div class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -1011,6 +1012,12 @@
                             <i class="fas fa-external-link-alt mr-1"></i>Link
                         </a>
                     ` : '-'}
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <button onclick="deleteCampaign('${campaign.id}')" 
+                            class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
                 </td>
             </tr>
         `).join('');
