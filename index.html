@@ -440,6 +440,21 @@
                            placeholder="Incolla qui il tuo token GitHub">
                     <div id="tokenError" class="text-red-600 text-sm mt-1 hidden"></div>
                 </div>
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h4 class="text-red-600 font-medium mb-2">Zona Pericolo</h4>
+                    <div class="flex items-center justify-between bg-red-50 p-4 rounded-lg">
+                        <div>
+                            <p class="text-sm text-red-800 font-medium">Cancella tutti i dati</p>
+                            <p class="text-xs text-red-600 mt-1">
+                                Questa azione cancellerà definitivamente tutti i dati salvati nel calendario.
+                            </p>
+                        </div>
+                        <button onclick="clearAllData()" 
+                                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                            <i class="fas fa-trash-alt mr-2"></i>Pulisci Gist
+                        </button>
+                    </div>
+                </div>
                 <button type="submit" 
                         class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors">
                     Salva Token
@@ -470,6 +485,9 @@
                         <button onclick="openTokenSettings()" 
                                 class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium">
                             <i class="fas fa-cog mr-2"></i>Impostazioni
+                        </button>
+                        <button onclick="testGistSaving()" class="text-sm text-blue-600 hover:text-blue-800">
+                            Verifica Salvataggio
                         </button>
             </div>
         </div>
@@ -844,12 +862,21 @@
                 lastUpdate: new Date().toISOString()
             };
 
+            console.log('Tentativo di salvataggio dati:', data);
+            console.log('Usando Gist ID:', gistId);
+
             if (gistId) {
-                await updateGist(gistId, data);
+                const response = await updateGist(gistId, data);
+                console.log('Risposta aggiornamento Gist:', response);
             } else {
-                await createNewGist(data);
+                const newGistId = await createNewGist(data);
+                console.log('Nuovo Gist creato con ID:', newGistId);
             }
             
+            // Verifica immediata dopo il salvataggio
+            const verificationResponse = await testGistSaving();
+            console.log('Verifica post-salvataggio:', verificationResponse);
+
             showSuccess('Dati salvati con successo');
         } catch (error) {
             console.error('Errore nel salvataggio:', error);
@@ -1292,16 +1319,15 @@
 
     // Funzioni di gestione campagne
     async function deleteCampaign(id) {
-        if (!confirm('Sei sicuro di voler eliminare questa campagna?')) return;
-
-        try {
-            campaigns = campaigns.filter(c => c.id !== id);
-            await saveCampaigns();
-            renderCampaigns();
-            renderCalendar();
-        } catch (error) {
-            console.error('Errore nell\'eliminazione:', error);
-            showError('Errore nell\'eliminazione della campagna');
+        if (confirm('Sei sicuro di voler eliminare questa campagna?')) {
+            const index = campaigns.findIndex(c => c.id === id);
+            if (index !== -1) {
+                campaigns.splice(index, 1); // Rimuove la campagna dall'array
+                await saveCampaigns(); // Salva le modifiche sovrascrivendo il gist
+                renderCalendar();
+                renderCampaigns();
+                showSuccess('Campagna eliminata con successo');
+            }
         }
     }
 
@@ -1317,6 +1343,10 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         initializeApp();
+        // Esegui la pulizia dei dati vecchi all'avvio
+        cleanupOldData();
+        // Imposta la pulizia automatica ogni settimana
+        setInterval(cleanupOldData, 7 * 24 * 60 * 60 * 1000);
     });
 
     // Aggiungi questa nuova funzione per gestire l'apertura di una nuova campagna
@@ -1409,7 +1439,8 @@
     // Aggiungi queste funzioni per la gestione dei gist
     async function updateGist(gistId, data) {
         try {
-            await axios({
+            // Sovrascrive completamente il contenuto del file
+            const response = await axios({
                 method: 'PATCH',
                 url: `https://api.github.com/gists/${gistId}`,
                 headers: {
@@ -1420,17 +1451,20 @@
                 data: {
                     files: {
                         'calendar_data.json': {
-                            content: JSON.stringify(data)
+                            content: JSON.stringify(data, null, 2) // Formatta il JSON per leggibilità
                         }
-                    }
+                    },
+                    description: `Calendario Campagne Social - Ultimo aggiornamento: ${new Date().toLocaleString('it-IT')}`
                 }
             });
+
+            // Aggiungi log per monitorare la dimensione dei dati
+            const contentSize = JSON.stringify(data).length;
+            console.log(`Dimensione dati salvati: ${(contentSize / 1024).toFixed(2)} KB`);
+
+            return response.data;
         } catch (error) {
             console.error('Errore nell\'aggiornamento del gist:', error);
-            if(error.response?.status === 404) {
-                localStorage.removeItem('calendarGistId');
-                throw new Error('Gist non trovato');
-            }
             throw error;
         }
     }
@@ -1460,6 +1494,92 @@
         } catch (error) {
             console.error('Errore nella creazione del gist:', error);
             throw error;
+        }
+    }
+
+    // Aggiungi questa nuova funzione per gestire la verifica del salvataggio
+    async function testGistSaving() {
+        try {
+            const gistId = localStorage.getItem('calendarGistId');
+            if (!gistId) {
+                console.error('Nessun Gist ID trovato nel localStorage');
+                return;
+            }
+
+            // Verifica diretta del contenuto del gist
+            const response = await axios.get(`https://api.github.com/gists/${gistId}`, {
+                headers: {
+                    'Authorization': `token ${getGitHubToken()}`
+                }
+            });
+
+            console.log('Contenuto attuale del Gist:', response.data.files['calendar_data.json'].content);
+            
+            // Confronta con i dati locali
+            console.log('Dati locali:', {
+                campaigns: campaigns,
+                currentDate: {
+                    year: currentDate.getFullYear(),
+                    month: currentDate.getMonth()
+                }
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error('Errore nel test del salvataggio:', error);
+        }
+    }
+
+    // Aggiungi questa funzione per pulire periodicamente i dati
+    function cleanupOldData() {
+        // Rimuovi le campagne scadute (più vecchie di 6 mesi)
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        
+        const oldLength = campaigns.length;
+        campaigns = campaigns.filter(campaign => {
+            const endDate = new Date(campaign.endDate);
+            return endDate > sixMonthsAgo;
+        });
+
+        if (oldLength !== campaigns.length) {
+            console.log(`Rimosse ${oldLength - campaigns.length} campagne scadute`);
+            saveCampaigns(); // Salva le modifiche
+        }
+    }
+
+    // Aggiungi questa funzione per la pulizia totale del gist
+    async function clearAllData() {
+        if (confirm('ATTENZIONE: Questa azione cancellerà definitivamente tutti i dati salvati. Vuoi continuare?')) {
+            try {
+                const gistId = localStorage.getItem('calendarGistId');
+                if (!gistId) {
+                    showError('Nessun Gist ID trovato');
+                    return;
+                }
+
+                // Resetta i dati locali
+                campaigns = [];
+                currentDate = new Date();
+
+                // Salva un array vuoto nel gist
+                await updateGist(gistId, {
+                    campaigns: [],
+                    currentDate: {
+                        year: currentDate.getFullYear(),
+                        month: currentDate.getMonth()
+                    },
+                    lastUpdate: new Date().toISOString()
+                });
+
+                // Aggiorna l'interfaccia
+                renderCalendar();
+                renderCampaigns();
+                showSuccess('Tutti i dati sono stati cancellati con successo');
+            } catch (error) {
+                console.error('Errore nella pulizia dei dati:', error);
+                showError('Errore durante la cancellazione dei dati');
+            }
         }
     }
     </script>
