@@ -1027,6 +1027,8 @@
             
             calendar.appendChild(cell);
         }
+        
+        renderChannelsLegend();
     }
 
     function renderCampaigns() {
@@ -1143,31 +1145,90 @@
         try {
             const gistId = localStorage.getItem('calendarGistId');
             if (!gistId) {
-                showError('Nessun calendario da condividere');
+                showError('Nessun calendario da condividere. Configura prima le impostazioni.');
                 return;
             }
 
             // Crea l'URL di condivisione
-            const shareUrl = `${window.location.origin}/share.html?gist=${gistId}`;
+            const baseUrl = window.location.origin;
+            const shareUrl = `${baseUrl}/calendario-campagne/share.html?gist=${gistId}`;
 
-            // Prova a usare l'API di condivisione nativa
-            if (navigator.share) {
-                await navigator.share({
-                    title: 'Calendario Campagne',
-                    text: 'Visualizza il calendario delle campagne:',
-                    url: shareUrl
-                });
-            } else {
-                // Fallback: copia negli appunti
-                await navigator.clipboard.writeText(shareUrl);
-                showSuccess('Link di condivisione copiato negli appunti');
-            }
+            // Crea il modal di condivisione
+            const shareModal = document.createElement('div');
+            shareModal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50';
+            shareModal.innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-share-alt mr-2"></i>Condividi Calendario
+                        </h3>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                                class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <p class="text-sm text-gray-600 mb-2">Link di condivisione:</p>
+                            <div class="flex">
+                                <input type="text" 
+                                       value="${shareUrl}" 
+                                       class="flex-1 p-2 border rounded-l-lg text-sm" 
+                                       readonly>
+                                <button onclick="copyShareLink('${shareUrl}')" 
+                                        class="bg-blue-600 text-white px-4 rounded-r-lg hover:bg-blue-700">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex justify-center space-x-4">
+                            ${navigator.share ? `
+                                <button onclick="nativeShare('${shareUrl}')" 
+                                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center">
+                                    <i class="fas fa-share-alt mr-2"></i>
+                                    Condividi
+                                </button>
+                            ` : ''}
+                            <button onclick="this.parentElement.parentElement.parentElement.parentElement.remove()" 
+                                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">
+                                Chiudi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(shareModal);
+
         } catch (error) {
             console.error('Errore nella condivisione:', error);
-            if (error.name === 'NotAllowedError') {
-                showError('Condivisione non consentita dal browser');
-            } else {
-                showError('Errore nella condivisione del calendario');
+            showError('Errore nella generazione del link di condivisione');
+        }
+    }
+
+    // Funzione per copiare il link negli appunti
+    async function copyShareLink(url) {
+        try {
+            await navigator.clipboard.writeText(url);
+            showSuccess('Link copiato negli appunti');
+        } catch (error) {
+            console.error('Errore nella copia:', error);
+            showError('Impossibile copiare il link');
+        }
+    }
+
+    // Funzione per la condivisione nativa (se disponibile)
+    async function nativeShare(url) {
+        try {
+            await navigator.share({
+                title: 'Calendario Campagne',
+                text: 'Visualizza il calendario delle campagne:',
+                url: url
+            });
+            showSuccess('Calendario condiviso con successo');
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.error('Errore nella condivisione:', error);
+                showError('Errore nella condivisione');
             }
         }
     }
@@ -1351,9 +1412,19 @@
                 return;
             }
 
-            showSuccess('Verifica in corso...');
+            // Mostra un messaggio di verifica in corso
+            const statusMessage = document.createElement('div');
+            statusMessage.className = 'fixed bottom-4 right-4 bg-blue-100 text-blue-700 p-4 rounded-lg shadow-lg';
+            statusMessage.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Verifica in corso...</span>
+                </div>
+            `;
+            document.body.appendChild(statusMessage);
 
             // Step 1: Verifica il token
+            console.log('Verifico il token...');
             const userResponse = await axios.get('https://api.github.com/user', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -1364,8 +1435,10 @@
             if (userResponse.status !== 200) {
                 throw new Error('Token GitHub non valido');
             }
+            console.log('Token valido ✓');
 
             // Step 2: Verifica accesso al gist
+            console.log('Verifico accesso al gist...');
             const gistResponse = await axios.get(`https://api.github.com/gists/${gistId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -1376,8 +1449,10 @@
             if (gistResponse.status !== 200) {
                 throw new Error('Gist ID non valido o non accessibile');
             }
+            console.log('Gist accessibile ✓');
 
             // Step 3: Verifica permessi di scrittura
+            console.log('Verifico permessi di scrittura...');
             const testContent = {
                 test: true,
                 timestamp: new Date().toISOString()
@@ -1392,28 +1467,76 @@
                 },
                 data: {
                     files: {
-                        'test.json': {
+                        'test_verification.json': {
                             content: JSON.stringify(testContent)
                         }
                     }
                 }
             });
 
+            // Rimuovi il messaggio di verifica in corso
+            statusMessage.remove();
+
             if (writeResponse.status === 200) {
-                showSuccess('✅ Verifica completata con successo:\n- Token valido\n- Gist accessibile\n- Permessi di scrittura OK');
+                console.log('Permessi di scrittura OK ✓');
+                // Mostra il risultato in un modal
+                const resultModal = document.createElement('div');
+                resultModal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center';
+                resultModal.innerHTML = `
+                    <div class="bg-white p-6 rounded-lg shadow-xl max-w-md">
+                        <h3 class="text-lg font-semibold text-green-600 mb-4">
+                            <i class="fas fa-check-circle mr-2"></i>Verifica Completata
+                        </h3>
+                        <ul class="space-y-2 text-gray-700 mb-6">
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-green-500 mr-2"></i>
+                                Token GitHub valido
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-green-500 mr-2"></i>
+                                Gist accessibile
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-green-500 mr-2"></i>
+                                Permessi di scrittura OK
+                            </li>
+                        </ul>
+                        <button onclick="this.parentElement.parentElement.remove()" 
+                                class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">
+                            Chiudi
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(resultModal);
             }
 
         } catch (error) {
             console.error('Errore nella verifica:', error);
-            if (error.response?.status === 401) {
-                showError('❌ Token GitHub non valido');
-            } else if (error.response?.status === 404) {
-                showError('❌ Gist ID non trovato');
-            } else if (error.response?.status === 403) {
-                showError('❌ Permessi insufficienti per accedere al gist');
-            } else {
-                showError('❌ Errore nella verifica: ' + (error.message || 'errore sconosciuto'));
-            }
+            // Rimuovi il messaggio di verifica in corso se presente
+            const statusMessage = document.querySelector('.fixed.bottom-4.right-4');
+            if (statusMessage) statusMessage.remove();
+
+            // Mostra l'errore in un modal
+            const errorModal = document.createElement('div');
+            errorModal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center';
+            errorModal.innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-md">
+                    <h3 class="text-lg font-semibold text-red-600 mb-4">
+                        <i class="fas fa-exclamation-circle mr-2"></i>Errore nella Verifica
+                    </h3>
+                    <p class="text-gray-700 mb-6">
+                        ${error.response?.status === 401 ? 'Token GitHub non valido' :
+                          error.response?.status === 404 ? 'Gist ID non trovato' :
+                          error.response?.status === 403 ? 'Permessi insufficienti' :
+                          error.message || 'Errore sconosciuto'}
+                    </p>
+                    <button onclick="this.parentElement.parentElement.remove()" 
+                            class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700">
+                        Chiudi
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(errorModal);
         }
     }
 
@@ -1706,6 +1829,28 @@ ${campaign.link ? `Link: ${campaign.link}` : ''}`.trim();
 
     // Chiama la funzione quando la pagina si carica
     document.addEventListener('DOMContentLoaded', checkSharedCalendar);
+
+    function renderChannelsLegend() {
+        const legendContainer = document.createElement('div');
+        legendContainer.className = 'mt-8 bg-white rounded-lg shadow-lg p-4';
+        
+        legendContainer.innerHTML = `
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Legenda Canali</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                ${Object.entries(channelColors)
+                    .map(([channel, color]) => `
+                        <div class="flex items-center space-x-2">
+                            <div class="w-4 h-4 rounded-full" style="background-color: ${color}"></div>
+                            <span class="text-sm text-gray-700">${channel}</span>
+                        </div>
+                    `).join('')}
+            </div>
+        `;
+
+        // Trova il container appropriato e aggiungi la legenda
+        const mainContainer = document.querySelector('main');
+        mainContainer.appendChild(legendContainer);
+    }
     </script>
 </body>
 </html>
