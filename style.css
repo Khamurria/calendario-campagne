@@ -1,0 +1,33 @@
+/* Custom styles complementari a Tailwind */
+
+.calendar-day {
+    @apply min-h-[120px] bg-white p-2 relative;
+}
+
+.campaign-stripe {
+    @apply text-sm p-1 mb-1 rounded truncate flex items-center;
+    transition: all 0.2s;
+}
+
+.campaign-stripe:hover {
+    @apply opacity-90 transform scale-[1.02];
+}
+
+.image-preview-container {
+    @apply border-2 border-dashed border-gray-300 rounded-lg relative;
+    aspect-ratio: 16/9;
+}
+
+.thumbnail-preview {
+    @apply object-cover w-full h-full rounded-lg;
+}
+
+.modal-overlay {
+    @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4;
+    backdrop-filter: blur(3px);
+}
+
+#loading-overlay {
+    @apply fixed inset-0 bg-white bg-opacity-80 flex items-center justify-center hidden;
+    z-index: 999;
+}

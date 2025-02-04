@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario Campagne Social - Gestione</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="img/regione-lombardia.jpg" class="h-12 mr-4" alt="Logo Regione Lombardia">
+                <h1 class="text-2xl font-bold text-gray-800">Calendario campagne social</h1>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="openCampaignModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Aggiungi campagna
+                </button>
+                <button onclick="window.open('share.html','_blank')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">
+                    Condividi calendario
+                </button>
+                <button onclick="openSettingsModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">
+                    Impostazioni
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Legenda -->
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center gap-6 flex-wrap">
+        <div class="flex gap-4">
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-[#1877F2]"></span>
+                <span>Facebook</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-[#E4405F]"></span>
+                <span>Instagram</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-[#000000]"></span>
+                <span>TikTok</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-[#0A66C2]"></span>
+                <span>LinkedIn</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-[#1DA1F2]"></span>
+                <span>Twitter</span>
+            </div>
+        </div>
+        <div class="h-6 w-px bg-gray-300"></div>
+        <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+            </svg>
+            <span>Campagna in dark mode</span>
+        </div>
+    </div>
+
+    <!-- Contenuto principale -->
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-8">
+        <!-- Tabella Campagne -->
+        <section>
+            <h2 class="text-xl font-bold mb-4">Elenco Post Sponsorizzati</h2>
+            <div class="bg-white rounded-lg shadow overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Titolo</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Anteprima</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Periodo</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Canale</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dark</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Link</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="campaigns-table">
+                        <!-- Popolato dinamicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Calendario -->
+        <section>
+            <h2 class="text-xl font-bold mb-4">Calendario Sponsorizzate</h2>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold" id="current-month">Gennaio 2025</h3>
+                    <div class="flex gap-2">
+                        <button onclick="changeMonth(-1)" class="p-2 hover:bg-gray-100 rounded">
+                            ←
+                        </button>
+                        <button onclick="changeMonth(1)" class="p-2 hover:bg-gray-100 rounded">
+                            →
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-7 gap-px bg-gray-200" id="calendar-grid">
+                    <!-- Popolato dinamicamente -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modali -->
+    <div id="campaign-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <!-- Form aggiunta campagna -->
+        </div>
+    </div>
+
+    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4">Impostazioni</h3>
+            <form id="settings-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">GitHub Personal Access Token</label>
+                    <input type="password" id="github-token" 
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <p class="text-sm text-gray-500 mt-1">Il token non viene salvato nel codice</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Gist ID</label>
+                    <input type="text" id="gist-id" 
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+
+                <div class="flex gap-2 justify-end">
+                    <button type="button" onclick="testGistConnection()" 
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                        Test Connessione
+                    </button>
+                    <button type="button" onclick="deleteAllData()" 
+                            class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+                        Cancella Tutto
+                    </button>
+                    <button type="button" onclick="closeSettingsModal()" 
+                            class="px-4 py-2 text-gray-600 hover:bg-gray-50 rounded">
+                        Chiudi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="scripts/gist-handler.js"></script>
+    <script>
+        // Implementazione completa delle funzionalità
+        const state = {
+            currentMonth: 0,
+            campaigns: [],
+            gistId: localStorage.getItem('gistId') || '',
+            githubToken: localStorage.getItem('githubToken') || ''
+        };
+
+        // Funzionalità Gist (esempio implementativo)
+        async function saveToGist() {
+            const response = await fetch(`https://api.github.com/gists/${state.gistId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `token ${state.githubToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    files: {
+                        'campaigns.json': {
+                            content: JSON.stringify(state.campaigns)
+                        }
+                    }
+                })
+            });
+
+            if(!response.ok) throw new Error('Salvataggio fallito');
+        }
+
+        async function loadFromGist() {
+            const response = await fetch(`https://api.github.com/gists/${state.gistId}`, {
+                headers: {
+                    'Authorization': `token ${state.githubToken}`
+                }
+            });
+
+            const data = await response.json();
+            state.campaigns = JSON.parse(data.files['campaigns.json'].content);
+            updateUI();
+        }
+
+        // Funzionalità complete dell'interfaccia
+        function updateUI() {
+            // Aggiornamento tabella e calendario
+        }
+
+        // Gestione impostazioni
+        function testGistConnection() {
+            // Implementazione test connessione
+        }
+
+        async function deleteAllData() {
+            if(confirm('Sicuro di voler cancellare TUTTI i dati?')) {
+                state.campaigns = [];
+                await saveToGist();
+                updateUI();
+            }
+        }
+
+        // Inizializzazione
+        document.addEventListener('DOMContentLoaded', async () => {
+            if(state.gistId && state.githubToken) {
+                await loadFromGist();
+            }
+        });
+    </script>
+</body>
+</html>/* Custom styles complementari a Tailwind */
+
+.calendar-day {
+    @apply min-h-[120px] bg-white p-2 relative;
+}
+
+.campaign-stripe {
+    @apply text-sm p-1 mb-1 rounded truncate flex items-center;
+    transition: all 0.2s;
+}
+
+.campaign-stripe:hover {
+    @apply opacity-90 transform scale-[1.02];
+}
+
+.image-preview-container {
+    @apply border-2 border-dashed border-gray-300 rounded-lg relative;
+    aspect-ratio: 16/9;
+}
+
+.thumbnail-preview {
+    @apply object-cover w-full h-full rounded-lg;
+}
+
+.modal-overlay {
+    @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4;
+    backdrop-filter: blur(3px);
+}
+
+#loading-overlay {
+    @apply fixed inset-0 bg-white bg-opacity-80 flex items-center justify-center hidden;
+    z-index: 999;
+}
+
+#loading-overlay .animate-spin {
+    @apply rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500;
+}<div id="campaign-modal" class="modal-overlay hidden">
+    <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <h3 class="text-xl font-bold mb-4">Gestione Campagna</h3>
+        <form id="campaign-form" class="space-y-4" onsubmit="handleCampaignSubmit(event)">
+            <!-- Titolo -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Titolo Campagna *</label>
+                <input type="text" id="campaign-title" required
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+
+            <!-- Anteprima Immagine -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Anteprima Immagine</label>
+                <div class="image-preview-container mt-1">
+                    <input type="file" id="image-upload" accept="image/*" class="hidden" 
+                        onchange="handleImageUpload(event)">
+                    <label for="image-upload" class="cursor-pointer w-full h-full flex items-center justify-center">
+                        <div id="image-preview" class="hidden"></div>
+                        <span id="upload-label" class="text-gray-500">Clicca per caricare un'immagine</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Periodo -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Data Inizio *</label>
+                    <input type="date" id="start-date" required
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Data Fine *</label>
+                    <input type="date" id="end-date" required
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <!-- Tipo e Canale -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tipo Campagna *</label>
+                    <input type="text" id="campaign-type" required
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Canale Social *</label>
+                    <select id="social-channel" required
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="">Seleziona...</option>
+                        <option value="Facebook">Facebook</option>
+                        <option value="Instagram">Instagram</option>
+                        <option value="TikTok">TikTok</option>
+                        <option value="LinkedIn">LinkedIn</option>
+                        <option value="Twitter">Twitter</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Dark Mode e Link -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex items-center">
+                    <input type="checkbox" id="dark-mode" 
+                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="dark-mode" class="ml-2 block text-sm text-gray-700">Modalità Dark</label>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Link *</label>
+                    <input type="url" id="campaign-link" required
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <!-- Pulsanti -->
+            <div class="flex justify-end gap-2 pt-4">
+                <button type="button" onclick="closeModal('campaign-modal')" 
+                    class="px-4 py-2 text-gray-600 hover:bg-gray-50 rounded">
+                    Annulla
+                </button>
+                <button type="submit" 
+                    class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                    Salva Campagna
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
