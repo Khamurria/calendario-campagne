@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendario Campagne Social - Gestione</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- HEADER -->
+  <header class="flex items-center p-6 bg-white shadow-md">
+    <!-- Logo a sinistra -->
+    <div class="w-[200px]">
+      <img src="img/regione-lombardia.jpg" alt="Regione Lombardia" class="h-16 w-auto object-contain" />
+    </div>
+    
+    <!-- Titolo centrato -->
+    <div class="flex-1 text-center">
+      <h1 class="text-3xl font-bold text-[#0066CC]">Calendario Campagne Social</h1>
+    </div>
+    
+    <!-- Pulsanti a destra -->
+    <div class="w-[200px] flex items-center justify-end space-x-3">
+      <button id="btn-add" class="flex items-center space-x-2 bg-[#0066CC] text-white px-4 py-2 rounded-lg hover:bg-[#0052B3] transition">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span class="text-sm font-medium">Nuova</span>
+      </button>
+      <button id="btn-share" class="flex items-center space-x-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l-4-4-4 4M8 16l4 4 4-4" />
+        </svg>
+        <span class="text-sm font-medium">Condividi</span>
+      </button>
+      <button id="btn-settings" class="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span class="text-sm font-medium">Impostazioni</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MODALE: IMPOSTAZIONI (Versione aggiornata) -->
+  <div id="settings-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+    <div class="bg-white rounded-xl shadow-lg w-11/12 md:w-1/3 p-6 relative">
+      <h3 class="text-2xl font-bold text-[#0066CC] mb-6">Impostazioni</h3>
+      
+      <!-- Stato Connessione -->
+      <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-gray-700">Stato Connessione</span>
+          <span id="connection-status" class="text-sm font-medium"></span>
+        </div>
+      </div>
+
+      <!-- Azioni -->
+      <div class="space-y-4">
+        <button type="button" id="delete-all" class="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm font-medium">
+          Cancella Dati
+        </button>
+        
+        <button type="button" id="btn-logout" class="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition text-sm font-medium">
+          Logout
+        </button>
+
+        <button type="button" id="close-settings" class="w-full border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition text-sm font-medium">
+          Chiudi
+        </button>
+      </div>
+
+      <button id="settings-close" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+<script>
+    /***********************
+     * VARIABILI GLOBALI *
+     ***********************/
+    let campaigns = [];
+    let currentMonth = 0;
+    let currentYear = 2025;
+
+    // Token e Gist ID ora vengono presi da sessionStorage
+    const githubToken = sessionStorage.getItem('githubToken');
+    const gistId = sessionStorage.getItem('gistId');
+
+    /***********************
+     * CONTROLLO AUTENTICAZIONE *
+     ***********************/
+    async function checkAuthentication() {
+      if (!githubToken || !gistId) {
+        window.location.href = 'index.html';
+        return false;
+      }
+
+      try {
+        const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+          headers: { Authorization: `token ${githubToken}` }
+        });
+
+        if (!res.ok) {
+          throw new Error('Sessione scaduta');
+        }
+
+        updateConnectionStatus(true);
+        return true;
+      } catch (error) {
+        console.error('Errore di autenticazione:', error);
+        updateConnectionStatus(false);
+        return false;
+      }
+    }
+
+    function updateConnectionStatus(isConnected) {
+      const statusElement = document.getElementById('connection-status');
+      if (isConnected) {
+        statusElement.textContent = 'Connesso';
+        statusElement.className = 'text-sm font-medium text-emerald-600';
+      } else {
+        statusElement.textContent = 'Non connesso';
+        statusElement.className = 'text-sm font-medium text-red-600';
+      }
+    }
+
+    function logout() {
+      sessionStorage.removeItem('githubToken');
+      sessionStorage.removeItem('gistId');
+      window.location.href = 'index.html';
+    }
+
+    /***********************
+     * GESTIONE MODALI *
+     ***********************/
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.remove('hidden');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+    }
+
+    // Event Listeners per le modali
+    document.getElementById('btn-settings').addEventListener('click', () => {
+      checkAuthentication(); // Aggiorna lo stato della connessione
+      openModal('settings-modal');
+    });
+
+    ['settings-close', 'close-settings'].forEach(id => {
+      document.getElementById(id).addEventListener('click', () => closeModal('settings-modal'));
+    });
+
+    // Logout
+    document.getElementById('btn-logout').addEventListener('click', logout);
+
+    // Cancella dati
+    document.getElementById('delete-all').addEventListener('click', async () => {
+      if (confirm("Sei sicuro di voler cancellare tutti i dati? Questa operazione è irreversibile.")) {
+        campaigns = [];
+        await saveCampaignsToGist();
+        renderCampaignTable();
+        renderCalendar(currentYear, currentMonth);
+      }
+    });
+
+    /***********************
+     * GESTIONE GIST *
+     ***********************/
+    async function loadCampaignsFromGist() {
+      try {
+        const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+          headers: { Authorization: `token ${githubToken}` }
+        });
+
+        if (!res.ok) {
+          throw new Error("Errore nel recupero del Gist");
+        }
+
+        const data = await res.json();
+        if (data.files && data.files["campaigns.json"]) {
+          campaigns = JSON.parse(data.files["campaigns.json"].content);
+          updateConnectionStatus(true);
+        }
+      } catch (error) {
+        console.error("loadCampaignsFromGist:", error);
+        updateConnectionStatus(false);
+      }
+    }
+
+    async function saveCampaignsToGist() {
+      try {
+        const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+          method: "PATCH",
+          headers: {
+            "Authorization": `token ${githubToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            files: {
+              "campaigns.json": {
+                content: JSON.stringify(campaigns, null, 2)
+              }
+            }
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error("Errore nel salvataggio sul Gist");
+        }
+
+        updateConnectionStatus(true);
+      } catch (error) {
+        console.error("saveCampaignsToGist:", error);
+        updateConnectionStatus(false);
+      }
+    }
+
+    /***********************
+     * INIZIALIZZAZIONE *
+     ***********************/
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Verifica autenticazione
+      const isAuthenticated = await checkAuthentication();
+      if (!isAuthenticated) return;
+
+      // Carica dati e inizializza l'interfaccia
+      await loadCampaignsFromGist();
+      renderCampaignTable();
+      renderCalendar(currentYear, currentMonth);
+
+      // Controllo periodico della connessione (ogni 5 minuti)
+      setInterval(checkAuthentication, 300000);
+    });
+/***********************
+     * FUNZIONI DI UTILITÀ *
+     ***********************/
+    function parseLocalDate(dateStr) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('it-IT');
+    }
+
+    /***********************
+     * RENDER TABELLA CAMPAGNE *
+     ***********************/
+    function renderCampaignTable() {
+      const tbody = document.getElementById('campaign-table-body');
+      tbody.innerHTML = '';
+      
+      if (campaigns.length === 0) {
+        tbody.innerHTML = '<tr id="no-campaigns"><td colspan="8" class="text-center py-8 text-gray-500">Nessuna campagna inserita</td></tr>';
+        return;
+      }
+
+      campaigns.forEach((campaign, index) => {
+        const imageContent = campaign.image ? 
+          `<img src="${campaign.image}" class="w-20 h-20 object-cover mx-auto rounded-lg" />` : "";
+        const darkContent = campaign.dark ? 
+          `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto text-gray-700" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+          </svg>` : "";
+        const linkContent = campaign.link ? 
+          `<a href="${campaign.link}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">Link</a>` : "";
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-gray-50";
+        tr.innerHTML = `
+          <td class="px-4 py-3 text-sm text-gray-900">${campaign.title}</td>
+          <td class="px-4 py-3">${imageContent}</td>
+          <td class="px-4 py-3 text-sm text-center text-gray-900">${formatDate(campaign.start)} - ${formatDate(campaign.end)}</td>
+          <td class="px-4 py-3 text-sm text-center text-gray-900">${campaign.type}</td>
+          <td class="px-4 py-3 text-sm text-center text-gray-900">${campaign.channel}</td>
+          <td class="px-4 py-3 text-center">${darkContent}</td>
+          <td class="px-4 py-3 text-center">${linkContent}</td>
+          <td class="px-4 py-3 text-center">
+            <div class="flex justify-center space-x-2">
+              <button class="edit-btn p-1.5 bg-yellow-100 text-yellow-600 rounded-lg hover:bg-yellow-200" data-index="${index}" title="Modifica">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+              <button class="delete-btn p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" data-index="${index}" title="Elimina">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Event listeners per i pulsanti
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          editingCampaignIndex = this.getAttribute('data-index');
+          populateCampaignForm(campaigns[editingCampaignIndex]);
+          openModal('campaign-modal');
+        });
+      });
+
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+          const index = this.getAttribute('data-index');
+          if (confirm("Sei sicuro di voler eliminare questa campagna?")) {
+            campaigns.splice(index, 1);
+            await saveCampaignsToGist();
+            renderCampaignTable();
+            renderCalendar(currentYear, currentMonth);
+          }
+        });
+      });
+    }
+
+    /***********************
+     * RENDER CALENDARIO *
+     ***********************/
+    function renderCalendar(year, month) {
+      const calendarGrid = document.getElementById('calendar-grid');
+      const monthNames = [
+        'Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+        'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'
+      ];
+      
+      // Mantieni i giorni della settimana esistenti e pulisci il resto
+      const headerCells = Array.from(calendarGrid.children).slice(0, 7);
+      calendarGrid.innerHTML = '';
+      headerCells.forEach(cell => calendarGrid.appendChild(cell));
+
+      document.getElementById('calendar-title').textContent = `${monthNames[month]} ${year}`;
+      
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      let offset = firstDay === 0 ? 6 : firstDay - 1;
+
+      // Celle vuote iniziali
+      for (let i = 0; i < offset; i++) {
+        const cell = document.createElement('div');
+        cell.className = "bg-white p-2 min-h-[100px]";
+        calendarGrid.appendChild(cell);
+      }
+
+      // Celle dei giorni
+      for (let day = 1; day <= daysInMonth; day++) {
+        const cell = document.createElement('div');
+        cell.className = "bg-white p-2 min-h-[100px] space-y-1";
+        cell.innerHTML = `<div class="text-sm font-semibold text-gray-700">${day}</div>`;
+
+        const currentDate = new Date(year, month, day);
+        currentDate.setHours(0, 0, 0, 0);
+
+        campaigns.forEach(campaign => {
+          const startDate = new Date(campaign.start);
+          const endDate = new Date(campaign.end);
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(23, 59, 59, 999);
+
+          if (currentDate >= startDate && currentDate <= endDate) {
+            const stripe = document.createElement('div');
+            stripe.className = "text-xs text-white rounded-lg p-1.5 cursor-pointer truncate hover:opacity-90 transition";
+            
+            const colorMap = {
+              Facebook: 'bg-blue-600',
+              Instagram: 'bg-pink-500',
+              TikTok: 'bg-red-500',
+              Linkedin: 'bg-blue-800',
+              Twitter: 'bg-sky-500'
+            };
+            
+            stripe.classList.add(colorMap[campaign.channel] || 'bg-gray-500');
+            stripe.innerHTML = `
+              ${campaign.title} 
+              <span class="text-xs opacity-75">${campaign.type}</span>
+              ${campaign.dark ? '<svg xmlns="http://www.w3.org/2000/svg" class="inline-block w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>' : ''}
+            `;
+            
+            if (campaign.link) {
+              stripe.addEventListener('click', () => window.open(campaign.link, '_blank'));
+            }
+            
+            cell.appendChild(stripe);
+          }
+        });
+
+        calendarGrid.appendChild(cell);
+      }
+    }
+  </script>
+</body>
+</html>
