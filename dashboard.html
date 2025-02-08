@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Calendario Campagne Social</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    /* Classe di utilità per layout più compatto */
+    .compact { padding: 1rem !important; }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <!-- HEADER -->
+  <header class="flex items-center p-4 bg-white shadow">
+    <div class="w-48">
+      <img src="img/regione-lombardia.jpg" alt="Regione Lombardia" class="h-12 w-auto object-contain" />
+    </div>
+    <div class="flex-1 text-center">
+      <h1 class="text-2xl font-bold text-[#0066CC]">Calendario Campagne Social</h1>
+    </div>
+    <div class="w-48"></div>
+  </header>
+
+  <!-- FORM LOGIN -->
+  <main class="max-w-sm mx-auto my-8">
+    <div class="bg-white rounded-lg shadow border p-4 space-y-4">
+      <h2 class="text-xl font-bold text-[#0066CC] text-center">Accesso</h2>
+      <form id="login-form" class="space-y-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">GitHub Token</label>
+          <input 
+            type="password" 
+            id="github-token" 
+            class="w-full border rounded p-2 text-sm focus:ring focus:ring-blue-500" 
+            placeholder="Inserisci il tuo token GitHub" 
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">ID Gist</label>
+          <input 
+            type="text" 
+            id="gist-id" 
+            class="w-full border rounded p-2 text-sm focus:ring focus:ring-blue-500" 
+            placeholder="Inserisci l'ID del Gist" 
+            required
+          />
+        </div>
+        <button type="submit" class="w-full bg-[#0066CC] text-white rounded p-2 font-medium hover:bg-[#0052B3] transition">
+          Accedi
+        </button>
+      </form>
+      <!-- Messaggio di errore -->
+      <div id="error-message" class="hidden text-red-600 text-sm text-center"></div>
+    </div>
+  </main>
+
+  <script>
+    // Al caricamento, popola i campi se esistono credenziali salvate
+    window.addEventListener('DOMContentLoaded', () => {
+      const tokenInput = document.getElementById('github-token');
+      const gistInput = document.getElementById('gist-id');
+      const savedToken = localStorage.getItem('githubToken');
+      const savedGistId = localStorage.getItem('gistId');
+      if (savedToken) tokenInput.value = savedToken;
+      if (savedGistId) gistInput.value = savedGistId;
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const token = document.getElementById('github-token').value.trim();
+      const gistId = document.getElementById('gist-id').value.trim();
+      const errorDiv = document.getElementById('error-message');
+      
+      try {
+        const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+          headers: { 
+            Authorization: `token ${token}`,
+            Accept: "application/vnd.github.v3+json",
+            "User-Agent": "SocialCalendarApp"
+          }
+        });
+        if (!res.ok) throw new Error('Credenziali non valide. Verifica token e ID Gist.');
+        
+        // Salva le credenziali
+        localStorage.setItem('githubToken', token);
+        localStorage.setItem('gistId', gistId);
+        
+        // Reindirizza alla dashboard
+        window.location.href = 'dashboard.html';
+        
+      } catch (error) {
+        errorDiv.textContent = error.message;
+        errorDiv.classList.remove('hidden');
+        
+        // Rimuovi eventuali credenziali non valide
+        localStorage.removeItem('githubToken');
+        localStorage.removeItem('gistId');
+      }
+    });
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendario Campagne Social - Gestione</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    /* Aggiunta di classi per un layout più compatto */
+    .compact { padding: 1rem !important; }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- HEADER -->
+  <header class="flex items-center p-4 bg-white shadow">
+    <div class="w-48">
+      <img src="img/regione-lombardia.jpg" alt="Regione Lombardia" class="h-12 w-auto object-contain" />
+    </div>
+    <div class="flex-1 text-center">
+      <h1 class="text-2xl font-bold text-[#0066CC]">Calendario Campagne Social</h1>
+    </div>
+    <div class="w-48 flex items-center justify-end space-x-2">
+      <button id="btn-add" class="flex items-center space-x-1 bg-[#0066CC] text-white px-3 py-1.5 rounded hover:bg-[#0052B3] transition text-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>Nuova</span>
+      </button>
+      <button id="btn-share" class="flex items-center space-x-1 bg-emerald-600 text-white px-3 py-1.5 rounded hover:bg-emerald-700 transition text-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12v.01M12 4v.01M20 12v.01M12 20v.01M16 8l-4-4-4 4M8 16l4 4 4-4" />
+        </svg>
+        <span>Condividi</span>
+      </button>
+      <button id="btn-settings" class="flex items-center space-x-1 bg-gray-600 text-white px-3 py-1.5 rounded hover:bg-gray-700 transition text-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span>Impostazioni</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- LEGENDA -->
+  <section class="mx-4 mt-4 p-4 bg-white rounded-lg shadow flex flex-wrap items-center gap-4 border">
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-blue-600 rounded-full"></span>
+      <span class="text-sm font-medium">Facebook</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-pink-500 rounded-full"></span>
+      <span class="text-sm font-medium">Instagram</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-red-500 rounded-full"></span>
+      <span class="text-sm font-medium">TikTok</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-blue-800 rounded-full"></span>
+      <span class="text-sm font-medium">Linkedin</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-sky-500 rounded-full"></span>
+      <span class="text-sm font-medium">Twitter</span>
+    </div>
+    <div class="flex items-center space-x-2 border-l pl-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-black" viewBox="0 0 24 24">
+        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+      </svg>
+      <span class="text-sm font-medium">Sponsorizzata in dark</span>
+    </div>
+  </section>
+
+  <!-- CONTENUTO PRINCIPALE -->
+  <main class="mx-4 my-4 space-y-6">
+    <!-- Elenco Campagne -->
+    <section class="bg-white rounded-lg shadow border">
+      <div class="p-4 border-b">
+        <h2 class="text-2xl font-bold text-[#0066CC] text-center">Elenco Post Sponsorizzati</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700">Titolo</th>
+              <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700">Anteprima</th>
+              <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700">Periodo</th>
+              <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700">Tipo</th>
+              <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700">Canale</th>
+              <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700">Dark</th>
+              <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700">Link</th>
+              <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700">Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="campaign-table-body" class="divide-y">
+            <tr id="no-campaigns">
+              <td colspan="8" class="text-center py-8 text-gray-500">Nessuna campagna inserita</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Calendario -->
+    <section class="bg-white rounded-lg shadow border">
+      <div class="p-4 border-b flex items-center justify-between">
+        <button id="prev-month" class="p-2 hover:bg-gray-100 rounded">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <h2 id="calendar-title" class="text-2xl font-bold text-[#0066CC] text-center flex-1">Gennaio 2025</h2>
+        <button id="next-month" class="p-2 hover:bg-gray-100 rounded">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+      <div id="calendar-grid" class="grid grid-cols-7 gap-px p-4 bg-gray-100">
+        <!-- Giorni della settimana -->
+        <div class="bg-white text-center py-2 text-sm font-semibold">Dom</div>
+        <div class="bg-white text-center py-2 text-sm font-semibold">Lun</div>
+        <div class="bg-white text-center py-2 text-sm font-semibold">Mar</div>
+        <div class="bg-white text-center py-2 text-sm font-semibold">Mer</div>
+        <div class="bg-white text-center py-2 text-sm font-semibold">Gio</div>
+        <div class="bg-white text-center py-2 text-sm font-semibold">Ven</div>
+        <div class="bg-white text-center py-2 text-sm font-semibold">Sab</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODALE: INSERISCI/MODIFICA CAMPAGNA -->
+  <div id="campaign-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+    <div class="bg-white rounded-lg shadow w-11/12 md:w-1/2 lg:w-1/3 p-4 relative max-h-[90vh] overflow-y-auto">
+      <h3 class="text-2xl font-bold text-[#0066CC] mb-4" id="modal-title">Aggiungi Campagna</h3>
+      <form id="campaign-form" class="space-y-3">
+        <!-- Titolo -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Titolo <span class="text-red-500">*</span></label>
+          <input type="text" id="campaign-title" class="w-full border rounded p-2 text-sm focus:ring focus:ring-blue-500" required />
+        </div>
+        <!-- Anteprima Immagine -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Anteprima Immagine</label>
+          <input type="file" id="campaign-image" accept="image/*" class="w-full text-sm file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+          <img id="image-preview" class="mt-2 max-h-40 object-contain hidden rounded" alt="Anteprima immagine" />
+        </div>
+        <!-- Periodo -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Periodo <span class="text-red-500">*</span></label>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="date" id="campaign-start" class="border rounded p-2 text-sm focus:ring focus:ring-blue-500" required />
+            <input type="date" id="campaign-end" class="border rounded p-2 text-sm focus:ring focus:ring-blue-500" required />
+          </div>
+        </div>
+        <!-- Tipo di Campagna -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Tipo di Campagna <span class="text-red-500">*</span></label>
+          <input type="text" id="campaign-type" class="w-full border rounded p-2 text-sm focus:ring focus:ring-blue-500" required />
+        </div>
+        <!-- Canale Social -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Canale Social <span class="text-red-500">*</span></label>
+          <select id="campaign-channel" class="w-full border rounded p-2 text-sm focus:ring focus:ring-blue-500" required>
+            <option value="">Seleziona</option>
+            <option value="Facebook">Facebook</option>
+            <option value="Instagram">Instagram</option>
+            <option value="TikTok">TikTok</option>
+            <option value="Linkedin">Linkedin</option>
+            <option value="Twitter">Twitter</option>
+          </select>
+        </div>
+        <!-- Modalità Dark -->
+        <div class="flex items-center space-x-2">
+          <input type="checkbox" id="campaign-dark" class="w-4 h-4 text-blue-600 border rounded focus:ring-blue-500"/>
+          <label for="campaign-dark" class="text-sm font-medium text-gray-700 flex items-center space-x-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-black" viewBox="0 0 24 24">
+              <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+            </svg>
+            <span>Sponsorizzata in dark</span>
+          </label>
+        </div>
+        <!-- Link -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Link</label>
+          <input type="url" id="campaign-link" class="w-full border rounded p-2 text-sm focus:ring focus:ring-blue-500" placeholder="https://..." />
+        </div>
+        <!-- Pulsanti -->
+        <div class="flex justify-end space-x-2 mt-4">
+          <button type="button" id="cancel-campaign" class="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition text-sm">
+            Annulla
+          </button>
+          <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm">
+            Salva
+          </button>
+        </div>
+      </form>
+      <button id="modal-close" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
