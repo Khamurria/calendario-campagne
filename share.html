@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendario Campagne Social - Visualizzazione</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .compact { padding: 1rem !important; }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- HEADER -->
+  <header class="flex items-center p-4 bg-white shadow">
+    <div class="w-48">
+      <img src="img/regione-lombardia.jpg" alt="Regione Lombardia" class="h-12 w-auto object-contain" />
+    </div>
+    <div class="flex-1 text-center">
+      <h1 class="text-2xl font-bold text-[#0066CC]">Calendario Campagne Social</h1>
+    </div>
+    <div class="w-48"></div>
+  </header>
+
+  <!-- Nella pagina share l'accesso è concesso solo se la URL contiene sia l'ID del Gist che il "codice di sicurezza" -->
+  <script>
+    function showError(message) {
+      document.body.innerHTML = `
+        <div class="p-4 text-center mt-16 text-red-600 font-medium">
+          🔒 ${message}<br>
+          <a href="index.html" class="text-blue-600 mt-4 inline-block">Torna alla homepage</a>
+        </div>
+      `;
+    }
+    
+    document.addEventListener('DOMContentLoaded', async () => {
+      const params = new URLSearchParams(window.location.search);
+      const gistId = params.get('gist');
+      const securityCode = params.get('code');
+      
+      if (!gistId || !securityCode) {
+        showError("Link di condivisione non valido: mancano parametri");
+        return;
+      }
+      
+      // Se i parametri sono presenti, carica i dati dal Gist
+      try {
+        const res = await fetch(`https://api.github.com/gists/${gistId}`);
+        const data = await res.json();
+        let campaigns = [];
+        if (data.files?.['campaigns.json']?.content) {
+          campaigns = JSON.parse(data.files['campaigns.json'].content);
+        }
+        // Una volta caricati i dati, procedi a renderizzare il contenuto
+        renderShareContent(campaigns);
+      } catch (error) {
+        showError("Errore nel caricamento dei dati");
+      }
+    });
+    
+    function renderShareContent(campaigns) {
+      // Crea l'interfaccia: tabella e calendario (come nelle versioni precedenti)
+      document.body.innerHTML += `
+        <main class="mx-4 my-4 space-y-6">
+          <!-- Elenco Campagne -->
+          <section class="bg-white rounded-lg shadow border">
+            <div class="p-4 border-b">
+              <h2 class="text-2xl font-bold text-[#0066CC] text-center">Elenco Post Sponsorizzati</h2>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700">Titolo</th>
+                    <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700">Anteprima</th>
+                    <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700">Periodo</th>
+                    <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700">Tipo</th>
+                    <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700">Canale</th>
+                    <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700">Dark</th>
+                    <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700">Link</th>
+                  </tr>
+                </thead>
+                <tbody id="campaign-table-body" class="divide-y">
+                  ${campaigns.length === 0 ? `<tr id="no-campaigns">
+                    <td colspan="7" class="text-center py-8 text-gray-500">Nessuna campagna inserita</td>
+                  </tr>` : campaigns.map(campaign => `
+                    <tr class="hover:bg-gray-50">
+                      <td class="px-3 py-2 text-sm text-gray-900">${campaign.title}</td>
+                      <td class="px-3 py-2">${campaign.image ? `<img src="${campaign.image}" class="w-20 h-20 object-cover mx-auto rounded-lg" />` : ""}</td>
+                      <td class="px-3 py-2 text-sm text-center text-gray-900">${new Date(campaign.start).toLocaleDateString('it-IT')} - ${new Date(campaign.end).toLocaleDateString('it-IT')}</td>
+                      <td class="px-3 py-2 text-sm text-center text-gray-900">${campaign.type}</td>
+                      <td class="px-3 py-2 text-sm text-center text-gray-900">${campaign.channel}</td>
+                      <td class="px-3 py-2 text-center">${campaign.dark ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto text-gray-700" fill="currentColor" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>` : ""}</td>
+                      <td class="px-3 py-2 text-center">${campaign.link ? `<a href="${campaign.link}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">Link</a>` : ""}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Calendario (questo esempio non include una logica complessa per il calendario) -->
+          <section class="bg-white rounded-lg shadow border p-4">
+            <h2 class="text-2xl font-bold text-[#0066CC] text-center">Calendario</h2>
+            <p class="text-center text-sm text-gray-600">[Calendario qui]</p>
+          </section>
+        </main>
+      `;
+    }
+  </script>
+
+  <!-- FOOTER -->
+  <footer class="bg-gray-200 text-gray-700 p-4 mt-4">
+    <div class="container mx-auto text-center text-sm">
+      &copy; 2025 Calendario Campagne Social. Tutti i diritti riservati.
+    </div>
+  </footer>
+</body>
+</html>
