@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="it" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accesso - Calendario Campagne</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
+    </style>
+</head>
+<body class="gradient-bg h-full">
+    <div class="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8 bg-white rounded-2xl shadow-xl p-10">
+            <div class="text-center">
+                <img class="mx-auto h-24 w-auto" src="img/regione-lombardia.png" alt="Logo Regione Lombardia">
+                <h2 class="mt-6 text-3xl font-extrabold" style="color: #0066cc; white-space: nowrap;">
+                    Calendario sponsorizzate
+                </h2>
+            </div>
+            <form id="login-form" class="mt-8 space-y-6">
+                <div class="rounded-md shadow-sm space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">GitHub Token</label>
+                        <input id="github-token" name="token" type="password" required
+                            class="appearance-none relative block w-full px-4 py-3 border border-gray-300 rounded-lg
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                                   text-sm placeholder-gray-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ID Gist</label>
+                        <input id="gist-id" name="gist" type="text" required
+                            class="appearance-none relative block w-full px-4 py-3 border border-gray-300 rounded-lg
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                                   text-sm placeholder-gray-500">
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit"
+                        class="group relative w-full flex justify-center py-3 px-4 border border-transparent
+                               text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700
+                               focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+                               transition-all duration-200">
+                        Accedi
+                    </button>
+                </div>
+                
+                <div id="error-message" class="hidden text-center text-sm text-red-600 pt-4"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const tokenInput = document.getElementById('github-token');
+            const gistInput = document.getElementById('gist-id');
+            
+            const savedToken = localStorage.getItem('githubToken');
+            const savedGistId = localStorage.getItem('gistId');
+
+            if(savedToken) tokenInput.value = savedToken;
+            if(savedGistId) gistInput.value = savedGistId;
+        });
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const token = document.getElementById('github-token').value.trim();
+            const gistId = document.getElementById('gist-id').value.trim();
+            const errorDiv = document.getElementById('error-message');
+
+            try {
+                const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+                    headers: { 
+                        Authorization: `token ${token}`,
+                        Accept: "application/vnd.github.v3+json",
+                        "User-Agent": "SocialCalendarApp"
+                    }
+                });
+
+                if(!res.ok) throw new Error('Credenziali non valide');
+
+                localStorage.setItem('githubToken', token);
+                localStorage.setItem('gistId', gistId);
+                window.location.href = 'dashboard.html';
+                
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+                localStorage.removeItem('githubToken');
+                localStorage.removeItem('gistId');
+            }
+        });
+    </script>
+</body>
+</html>
