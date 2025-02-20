@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendario Campagne Social - Visualizzazione</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- HEADER -->
+  <header class="flex items-center p-6 bg-white shadow-md">
+    <div class="w-[200px]">
+      <img src="img/regione-lombardia.jpg" alt="Regione Lombardia" class="h-16 w-auto object-contain" />
+    </div>
+    <div class="flex-1 text-center">
+      <h1 class="text-3xl font-bold text-[#0066CC]">Calendario Campagne Social</h1>
+    </div>
+    <div class="w-[200px]"></div>
+  </header>
+
+  <!-- LEGENDA -->
+  <section class="mx-6 mt-6 p-4 bg-white rounded-xl shadow-sm flex flex-wrap items-center gap-6 border">
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-blue-600 rounded-full"></span>
+      <span class="text-sm font-medium">Facebook</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-pink-500 rounded-full"></span>
+      <span class="text-sm font-medium">Instagram</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-red-500 rounded-full"></span>
+      <span class="text-sm font-medium">TikTok</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-blue-800 rounded-full"></span>
+      <span class="text-sm font-medium">Linkedin</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-sky-500 rounded-full"></span>
+      <span class="text-sm font-medium">Twitter</span>
+    </div>
+    <div class="flex items-center space-x-2 border-l pl-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-black" viewBox="0 0 24 24">
+        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+      </svg>
+      <span class="text-sm font-medium">Sponsorizzata in dark</span>
+    </div>
+  </section>
+
+  <!-- CONTENUTO PRINCIPALE -->
+  <main class="mx-6 my-6 space-y-8">
+    <!-- Elenco Campagne -->
+    <section class="bg-white rounded-xl shadow-sm border">
+      <div class="p-6 border-b">
+        <h2 class="text-2xl font-bold text-[#0066CC] text-center">Elenco Post Sponsorizzati</h2>
+      </div>
+      <!-- Filtro per Canale -->
+      <div class="p-4 border-b">
+        <label for="channel-filter" class="text-sm font-medium text-gray-700">Filtra per Canale:</label>
+        <select id="channel-filter" class="ml-2 border border-gray-300 rounded-lg p-1 text-sm">
+          <option value="">Tutti i canali</option>
+          <option value="Facebook">Facebook</option>
+          <option value="Instagram">Instagram</option>
+          <option value="TikTok">TikTok</option>
+          <option value="Linkedin">Linkedin</option>
+          <option value="Twitter">Twitter</option>
+        </select>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Titolo</th>
+              <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Anteprima</th>
+              <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Periodo</th>
+              <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Jolly Ticket</th>
+              <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Canale</th>
+              <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Dark</th>
+              <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Link</th>
+            </tr>
+          </thead>
+          <tbody id="campaign-table-body" class="divide-y">
+            <tr id="no-campaigns">
+              <td colspan="7" class="text-center py-8 text-gray-500">Nessuna campagna inserita</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Calendario -->
+    <section class="bg-white rounded-xl shadow-sm border">
+      <div class="p-6 border-b flex items-center justify-between">
+        <button id="prev-month" class="p-2 hover:bg-gray-100 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <h2 id="calendar-title" class="text-2xl font-bold text-[#0066CC] text-center flex-1">Gennaio 2025</h2>
+        <button id="next-month" class="p-2 hover:bg-gray-100 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+      <!-- Filtro Giorni con grafica migliorata -->
+      <div class="p-4 border-b bg-gray-100 rounded-lg flex items-center justify-center space-x-4">
+        <label for="day-filter-start" class="text-sm font-medium text-gray-700">Intervallo:</label>
+        <input id="day-filter-start" type="date" class="border border-gray-300 rounded-lg p-2 text-sm">
+        <span class="text-gray-500">-</span>
+        <input id="day-filter-end" type="date" class="border border-gray-300 rounded-lg p-2 text-sm">
+        <button id="clear-day-filter" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition text-sm">Reset</button>
+      </div>
+      <!-- Calendario Grid o Vista Filtro -->
+      <div id="calendar-grid" class="grid grid-cols-7 gap-px p-6 bg-gray-100">
+        <div class="bg-white text-center py-3 text-sm font-semibold">Dom</div>
+        <div class="bg-white text-center py-3 text-sm font-semibold">Lun</div>
+        <div class="bg-white text-center py-3 text-sm font-semibold">Mar</div>
+        <div class="bg-white text-center py-3 text-sm font-semibold">Mer</div>
+        <div class="bg-white text-center py-3 text-sm font-semibold">Gio</div>
+        <div class="bg-white text-center py-3 text-sm font-semibold">Ven</div>
+        <div class="bg-white text-center py-3 text-sm font-semibold">Sab</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let campaigns = [];
+    let currentMonth = 0;
+    let currentYear = 2025;
+    let tooltipDiv;
+    // Mezza luna identica a quella usata nella colonna "Dark"
+    const halfMoonSVG = `
+      <svg xmlns="http://www.w3.org/2000/svg" class="inline-block w-3 h-3 mr-1 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+      </svg>
+    `;
+    function parseLocalDate(dateStr) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('it-IT');
+    }
+    function showTooltip(campaign, event) {
+      hideTooltip();
+      tooltipDiv = document.createElement('div');
+      tooltipDiv.className = "absolute bg-white border border-gray-300 rounded-lg shadow-lg p-2 text-xs z-50";
+      tooltipDiv.style.left = event.pageX + 10 + "px";
+      tooltipDiv.style.top = event.pageY + 10 + "px";
+      tooltipDiv.innerHTML = `
+        <div><strong>Titolo:</strong> ${campaign.title}</div>
+        <div><strong>Jolly Ticket:</strong> ${campaign.type}</div>
+        <div><strong>Periodo:</strong> ${formatDate(campaign.start)} - ${formatDate(campaign.end)}</div>
+        <div><strong>Canale:</strong> ${campaign.channel}</div>
+        ${campaign.dark ? `<div><strong>Sponsorizzata in dark</strong></div>` : ''}
+        ${campaign.link ? `<div><strong>Link:</strong> <a href="${campaign.link}" target="_blank" class="text-blue-600 underline">${campaign.link}</a></div>` : ''}
+      `;
+      document.body.appendChild(tooltipDiv);
+    }
+    function hideTooltip() {
+      if (tooltipDiv) {
+        tooltipDiv.remove();
+        tooltipDiv = null;
+      }
+    }
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.remove('hidden');
+    }
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+    }
+    // In share.html non sono presenti pulsanti di modifica/eliminazione
+    // Pertanto, gestiamo solo il filtro e la visualizzazione
+    document.getElementById('copy-link').addEventListener('click', () => {
+      const shareLinkInput = document.getElementById('share-link');
+      shareLinkInput.select();
+      shareLinkInput.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(shareLinkInput.value).then(() => {
+        alert("Link copiato negli appunti!");
+      });
+    });
+    /***********************
+     * GESTIONE IMMAGINI *
+     ***********************/
+    // (Non sono presenti funzionalità di inserimento in share.html)
+    /***********************
+     * RENDER CAMPAGNE (tabella) *
+     ***********************/
+    function renderCampaignTable() {
+      const tbody = document.getElementById('campaign-table-body');
+      tbody.innerHTML = '';
+      let filteredCampaigns = campaigns.map((campaign, idx) => ({...campaign, originalIndex: idx}));
+      const filterValue = document.getElementById('channel-filter').value;
+      if (filterValue) {
+        filteredCampaigns = filteredCampaigns.filter(c => c.channel === filterValue);
+      }
+      filteredCampaigns.sort((a, b) => new Date(b.start) - new Date(a.start));
+      if (filteredCampaigns.length === 0) {
+        tbody.innerHTML = '<tr id="no-campaigns"><td colspan="7" class="text-center py-8 text-gray-500">Nessuna campagna inserita</td></tr>';
+        return;
+      }
+      filteredCampaigns.forEach(campaign => {
+        const imageContent = campaign.image 
+          ? `<img src="${campaign.image}" class="w-20 h-20 object-cover mx-auto rounded-lg" />`
+          : "";
+        const darkContent = campaign.dark 
+          ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto text-gray-700" fill="currentColor" viewBox="0 0 24 24">
+               <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+             </svg>`
+          : "";
+        const linkContent = campaign.link 
+          ? `<a href="${campaign.link}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">Link</a>`
+          : "";
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-gray-50";
+        tr.innerHTML = `
+          <td class="px-4 py-3 text-sm text-gray-900">${campaign.title}</td>
+          <td class="px-4 py-3">${imageContent}</td>
+          <td class="px-4 py-3 text-sm text-center text-gray-900">${formatDate(campaign.start)} - ${formatDate(campaign.end)}</td>
+          <td class="px-4 py-3 text-sm text-center text-gray-900">${campaign.type}</td>
+          <td class="px-4 py-3 text-sm text-center text-gray-900">${campaign.channel}</td>
+          <td class="px-4 py-3 text-center">${darkContent}</td>
+          <td class="px-4 py-3 text-center">${linkContent}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    /***********************
+     * RENDER CALENDARIO *
+     ***********************/
+    function renderCalendar(year, month) {
+      const calendarGrid = document.getElementById('calendar-grid');
+      const monthNames = [
+        'Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+        'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'
+      ];
+      
+      // Leggi il filtro per giorni
+      const dayFilterStartValue = document.getElementById('day-filter-start').value;
+      const dayFilterEndValue = document.getElementById('day-filter-end').value;
+      let filterStartDate = dayFilterStartValue ? new Date(dayFilterStartValue) : null;
+      let filterEndDate = dayFilterEndValue ? new Date(dayFilterEndValue) : null;
+      
+      // Se il filtro è attivo e l'intervallo è in un unico mese, visualizza SOLO quei giorni
+      if(filterStartDate && filterEndDate &&
+         filterStartDate.getFullYear() === filterEndDate.getFullYear() &&
+         filterStartDate.getMonth() === filterEndDate.getMonth()){
+        document.getElementById('calendar-title').textContent = `${monthNames[month]} ${year} (dal ${filterStartDate.getDate()} al ${filterEndDate.getDate()})`;
+        calendarGrid.innerHTML = "";
+        for(let day = filterStartDate.getDate(); day <= filterEndDate.getDate(); day++){
+          const cell = document.createElement('div');
+          cell.className = "bg-white p-2 min-h-[100px] space-y-1";
+          cell.innerHTML = `<div class="text-sm font-semibold text-gray-700">${day}</div>`;
+          const currentDate = new Date(year, month, day);
+          currentDate.setHours(0,0,0,0);
+          campaigns.forEach(campaign => {
+            const startDate = new Date(campaign.start);
+            const endDate = new Date(campaign.end);
+            startDate.setHours(0,0,0,0);
+            endDate.setHours(23,59,59,999);
+            if(currentDate >= startDate && currentDate <= endDate){
+              const stripe = document.createElement('div');
+              stripe.className = "text-xs text-white rounded-lg p-1.5 cursor-pointer truncate hover:opacity-90 transition";
+              const colorMap = {
+                Facebook: 'bg-blue-600',
+                Instagram: 'bg-pink-500',
+                TikTok: 'bg-red-500',
+                Linkedin: 'bg-blue-800',
+                Twitter: 'bg-sky-500'
+              };
+              stripe.classList.add(colorMap[campaign.channel] || 'bg-gray-500');
+              stripe.innerHTML = campaign.dark ? `${halfMoonSVG}${campaign.title}` : `${campaign.title}`;
+              if(campaign.link){
+                stripe.addEventListener('click', () => window.open(campaign.link, '_blank'));
+              }
+              stripe.addEventListener('mouseenter', (e) => showTooltip(campaign, e));
+              stripe.addEventListener('mousemove', (e) => {
+                if(tooltipDiv){
+                  tooltipDiv.style.left = e.pageX + 10 + "px";
+                  tooltipDiv.style.top = e.pageY + 10 + "px";
+                }
+              });
+              stripe.addEventListener('mouseleave', hideTooltip);
+              cell.appendChild(stripe);
+            }
+          });
+          calendarGrid.appendChild(cell);
+        }
+        return;
+      }
+      
+      // Altrimenti, visualizza il calendario standard
+      const headerCells = Array.from(calendarGrid.children).slice(0, 7);
+      calendarGrid.innerHTML = "";
+      headerCells.forEach(cell => calendarGrid.appendChild(cell));
+      document.getElementById('calendar-title').textContent = `${monthNames[month]} ${year}`;
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      let offset = firstDay === 0 ? 6 : firstDay - 1;
+      for(let i = 0; i < offset; i++){
+        const cell = document.createElement('div');
+        cell.className = "bg-white p-2 min-h-[100px]";
+        calendarGrid.appendChild(cell);
+      }
+      for(let day = 1; day <= daysInMonth; day++){
+        const cell = document.createElement('div');
+        cell.className = "bg-white p-2 min-h-[100px] space-y-1";
+        cell.innerHTML = `<div class="text-sm font-semibold text-gray-700">${day}</div>`;
+        const currentDate = new Date(year, month, day);
+        currentDate.setHours(0,0,0,0);
+        campaigns.forEach(campaign => {
+          const startDate = new Date(campaign.start);
+          const endDate = new Date(campaign.end);
+          startDate.setHours(0,0,0,0);
+          endDate.setHours(23,59,59,999);
+          if(currentDate >= startDate && currentDate <= endDate){
+            const stripe = document.createElement('div');
+            stripe.className = "text-xs text-white rounded-lg p-1.5 cursor-pointer truncate hover:opacity-90 transition";
+            const colorMap = {
+              Facebook: 'bg-blue-600',
+              Instagram: 'bg-pink-500',
+              TikTok: 'bg-red-500',
+              Linkedin: 'bg-blue-800',
+              Twitter: 'bg-sky-500'
+            };
+            stripe.classList.add(colorMap[campaign.channel] || 'bg-gray-500');
+            stripe.innerHTML = campaign.dark ? `${halfMoonSVG}${campaign.title}` : `${campaign.title}`;
+            if(campaign.link){
+              stripe.addEventListener('click', () => window.open(campaign.link, '_blank'));
+            }
+            stripe.addEventListener('mouseenter', (e) => showTooltip(campaign, e));
+            stripe.addEventListener('mousemove', (e) => {
+              if(tooltipDiv){
+                tooltipDiv.style.left = e.pageX + 10 + "px";
+                tooltipDiv.style.top = e.pageY + 10 + "px";
+              }
+            });
+            stripe.addEventListener('mouseleave', hideTooltip);
+            cell.appendChild(stripe);
+          }
+        });
+        calendarGrid.appendChild(cell);
+      }
+    }
+    /***********************
+     * GESTIONE GIST *
+     ***********************/
+    async function loadCampaignsFromGist() {
+      if(!githubToken || !gistId){
+        console.warn("Dati di connessione mancanti");
+        return;
+      }
+      try {
+        const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+          headers: { 
+            Authorization: `token ${githubToken}`,
+            Accept: "application/vnd.github.v3+json",
+            "User-Agent": "SocialCalendarApp"
+          }
+        });
+        if(!res.ok) throw new Error("Errore nel recupero del Gist");
+        const data = await res.json();
+        if(data.files && data.files["campaigns.json"]){
+          campaigns = JSON.parse(data.files["campaigns.json"].content);
+        }
+      } catch(error){
+        console.error("loadCampaignsFromGist:", error);
+      }
+    }
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Il parametro gist deve essere presente nell'URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlGist = urlParams.get('gist');
+      if(!urlGist){
+        document.getElementById('campaign-table-body').innerHTML = `
+          <tr><td colspan="7" class="text-center py-8 text-red-500">Link di condivisione non valido (parametro 'gist' mancante)</td></tr>
+        `;
+        return;
+      }
+      await loadCampaignsFromGist();
+      renderCampaignTable();
+      renderCalendar(currentYear, currentMonth);
+    });
+    document.getElementById('prev-month').addEventListener('click', () => {
+      if(currentMonth === 0){
+        currentMonth = 11;
+        currentYear--;
+      } else {
+        currentMonth--;
+      }
+      renderCalendar(currentYear, currentMonth);
+    });
+    document.getElementById('next-month').addEventListener('click', () => {
+      if(currentMonth === 11){
+        currentMonth = 0;
+        currentYear++;
+      } else {
+        currentMonth++;
+      }
+      renderCalendar(currentYear, currentMonth);
+    });
+    document.getElementById('channel-filter').addEventListener('change', renderCampaignTable);
+    // Filtro dei giorni
+    document.getElementById('day-filter-start').addEventListener('change', () => renderCalendar(currentYear, currentMonth));
+    document.getElementById('day-filter-end').addEventListener('change', () => renderCalendar(currentYear, currentMonth));
+    document.getElementById('clear-day-filter').addEventListener('click', () => {
+      document.getElementById('day-filter-start').value = "";
+      document.getElementById('day-filter-end').value = "";
+      renderCalendar(currentYear, currentMonth);
+    });
+  </script>
+</body>
+</html>
