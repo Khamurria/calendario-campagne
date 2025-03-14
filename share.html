@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendario Campagne Social - Visualizzazione</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+
+    /* Stile per rendere più compatta la tabella */
+    table.compact-rows tbody tr td {
+      padding-top: 0.4rem;
+      padding-bottom: 0.4rem;
+      line-height: 1.2;
+    }
+    table.compact-rows tbody tr td img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+    }
+
+    /* Nascondi i pulsanti di navigazione del calendario quando non servono */
+    .hidden-nav {
+      visibility: hidden;
+    }
+
+    /* Layout per l'icona dentro i campi date */
+    .date-input-container {
+      position: relative;
+      display: inline-block;
+      width: max-content;
+    }
+    .date-input-container input[type="date"] {
+      padding-right: 2.5rem; /* spazio per l'icona a destra */
+    }
+    .date-input-icon {
+      position: absolute;
+      right: 0.6rem;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #4B5563; /* text-gray-500 */
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- HEADER -->
+  <header class="flex items-center p-6 bg-white shadow-md">
+    <div class="w-[200px]">
+      <img src="img/regione-lombardia.jpg" alt="Regione Lombardia" class="h-16 w-auto object-contain" />
+    </div>
+    <div class="flex-1 text-center">
+      <h1 class="text-3xl font-bold text-[#0066CC]">Calendario Campagne Social</h1>
+    </div>
+    <div class="w-[200px]"></div>
+  </header>
+
+  <!-- LEGENDA -->
+  <section class="mx-6 mt-6 p-4 bg-white rounded-xl shadow-sm flex flex-wrap items-center gap-6 border">
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-blue-600 rounded-full"></span>
+      <span class="text-sm font-medium">Facebook</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-pink-500 rounded-full"></span>
+      <span class="text-sm font-medium">Instagram</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-red-500 rounded-full"></span>
+      <span class="text-sm font-medium">TikTok</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-blue-800 rounded-full"></span>
+      <span class="text-sm font-medium">Linkedin</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="w-4 h-4 bg-sky-500 rounded-full"></span>
+      <span class="text-sm font-medium">Twitter</span>
+    </div>
+    <div class="flex items-center space-x-2 border-l pl-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-black" viewBox="0 0 24 24">
+        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+      </svg>
+      <span class="text-sm font-medium">Sponsorizzata in dark</span>
+    </div>
+  </section>
+
+  <!-- CONTENUTO PRINCIPALE -->
+  <main class="mx-6 my-6 space-y-8">
+    <!-- Elenco Campagne -->
+    <section class="bg-white rounded-xl shadow-sm border">
+      <div class="p-6 border-b flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-[#0066CC]">Elenco Post Sponsorizzati</h2>
+        <!-- Filtro Canale (sola lettura) -->
+        <div class="flex items-center space-x-2">
+          <label for="channel-filter" class="text-sm font-medium text-gray-700">Canale:</label>
+          <select id="channel-filter" class="border border-gray-300 rounded-lg p-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="tutti">Tutti</option>
+            <option value="Facebook">Facebook</option>
+            <option value="Instagram">Instagram</option>
+            <option value="TikTok">TikTok</option>
+            <option value="Linkedin">Linkedin</option>
+            <option value="Twitter">Twitter</option>
+          </select>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full compact-rows">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Titolo</th>
+              <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Anteprima</th>
+              <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Periodo</th>
+              <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Campo jolly</th>
+              <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Canale</th>
+              <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Dark</th>
+              <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Link</th>
+            </tr>
+          </thead>
+          <tbody id="campaign-table-body" class="divide-y">
+            <tr id="no-campaigns">
+              <td colspan="7" class="text-center py-8 text-gray-500">Nessuna campagna inserita</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Calendario -->
+    <section class="bg-white rounded-xl shadow-sm border">
+      <!-- Barra di navigazione calendario -->
+      <div class="p-6 border-b flex items-center justify-between">
+        <button id="prev-month" class="p-2 hover:bg-gray-100 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <h2 id="calendar-title" class="text-2xl font-bold text-[#0066CC] text-center flex-1">Gennaio 2025</h2>
+        <button id="next-month" class="p-2 hover:bg-gray-100 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Filtro Date (sola lettura) -->
+      <div class="p-6 border-b">
+        <div class="flex items-center space-x-4">
+          <!-- Dal -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Dal:</label>
+            <div class="date-input-container">
+              <input 
+                type="date"
+                id="calendar-start"
+                placeholder="gg/mm/aaaa"
+                class="border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <svg xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 date-input-icon"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                title="Scegli data inizio"
+                onclick="document.getElementById('calendar-start').showPicker && document.getElementById('calendar-start').showPicker();">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2H6a2 2 0 01-2-2V7h4z" />
+              </svg>
+            </div>
+          </div>
+          <!-- Al -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Al:</label>
+            <div class="date-input-container">
+              <input
+                type="date"
+                id="calendar-end"
+                placeholder="gg/mm/aaaa"
+                class="border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <svg xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 date-input-icon"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                title="Scegli data fine"
+                onclick="document.getElementById('calendar-end').showPicker && document.getElementById('calendar-end').showPicker();">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2H6a2 2 0 01-2-2V7h4z" />
+              </svg>
+            </div>
+          </div>
+          <!-- Pulsanti Applica / Reset -->
+          <div class="flex items-end space-x-2 pt-5">
+            <button id="apply-date-filter" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm">
+              Applica
+            </button>
+            <button id="reset-date-filter" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition text-sm">
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="calendar-grid" class="grid grid-cols-7 gap-px p-6 bg-gray-100">
+        <!-- Giorni della settimana -->
+        <div class="bg-white text-center py-3 text-sm font-semibold">Dom</div>
+        <div class="bg-white text-center py-3 text-sm font-semibold">Lun</div>
+        <div class="bg-white text-center py-3 text-sm font-semibold">Mar</div>
+        <div class="bg-white text-center py-3 text-sm font-semibold">Mer</div>
+        <div class="bg-white text-center py-3 text-sm font-semibold">Gio</div>
+        <div class="bg-white text-center py-3 text-sm font-semibold">Ven</div>
+        <div class="bg-white text-center py-3 text-sm font-semibold">Sab</div>
+      </div>
+    </section>
+  </main>
+
+<script>
+  /*******************************
+   * VARIABILI E LOGICHE SHARE
+   *******************************/
+  let campaigns = [];
+
+  let channelFilterValue = 'tutti';
+
+  let dateFilterStart = null;
+  let dateFilterEnd = null;
+
+  let currentMonth = 0; 
+  let currentYear  = 2025;
+  let minMonth = 0, minYear = 2025;
+  let maxMonth = 11, maxYear = 2025;
+
+  function isBeforeOrSame(m1, y1, m2, y2) {
+    if (y1 < y2) return true;
+    if (y1 === y2 && m1 <= m2) return true;
+    return false;
+  }
+  function isAfterOrSame(m1, y1, m2, y2) {
+    if (y1 > y2) return true;
+    if (y1 === y2 && m1 >= m2) return true;
+    return false;
+  }
+
+  function formatDate(dateStr) {
+    const [yy, mm, dd] = dateStr.split('-').map(Number);
+    const dt = new Date(yy, mm-1, dd);
+    return dt.toLocaleDateString('it-IT');
+  }
+
+  // Filtro canale
+  document.getElementById('channel-filter').addEventListener('change', () => {
+    channelFilterValue = document.getElementById('channel-filter').value;
+    renderCampaignTable();
+  });
+
+  function renderCampaignTable() {
+    let filtered = campaigns;
+    if (channelFilterValue !== 'tutti') {
+      filtered = campaigns.filter(c => c.channel === channelFilterValue);
+    }
+
+    const tbody = document.getElementById('campaign-table-body');
+    tbody.innerHTML = '';
+    if (!filtered || filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-500">Nessuna campagna inserita</td></tr>';
+      return;
+    }
+    
+    // Ordinamento: sponsorizzate più recenti in alto
+    filtered.sort((a, b) => new Date(b.start) - new Date(a.start));
+
+    filtered.forEach(c => {
+      const imageContent = c.image 
+        ? `<img src="${c.image}" class="w-12 h-12 object-cover mx-auto rounded-lg" />`
+        : "";
+      const darkContent = c.dark 
+        ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto text-gray-700" fill="currentColor" viewBox="0 0 24 24">
+             <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+           </svg>`
+        : "";
+      const linkContent = c.link
+        ? `<a href="${c.link}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">Link</a>`
+        : "";
+      const tr = document.createElement('tr');
+      tr.className = "hover:bg-gray-50";
+      tr.innerHTML = `
+        <td class="px-4 py-2 text-sm text-gray-900 leading-tight">${c.title}</td>
+        <td class="px-4 py-2 text-center leading-tight">${imageContent}</td>
+        <td class="px-4 py-2 text-sm text-center text-gray-900 leading-tight">${formatDate(c.start)} - ${formatDate(c.end)}</td>
+        <td class="px-4 py-2 text-sm text-center text-gray-900 leading-tight">${c.type}</td>
+        <td class="px-4 py-2 text-sm text-center text-gray-900 leading-tight">${c.channel}</td>
+        <td class="px-4 py-2 text-center leading-tight">${darkContent}</td>
+        <td class="px-4 py-2 text-center leading-tight">${linkContent}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Calendario
+  document.getElementById('prev-month').addEventListener('click', () => {
+    if (!dateFilterStart || !dateFilterEnd) {
+      if (currentMonth === 0) { currentMonth=11; currentYear--; }
+      else { currentMonth--; }
+    } else {
+      if (!isBeforeOrSame(currentMonth, currentYear, minMonth, minYear)) {
+        if (currentMonth === 0) { currentMonth=11; currentYear--; }
+        else { currentMonth--; }
+      }
+    }
+    renderCalendar();
+  });
+  document.getElementById('next-month').addEventListener('click', () => {
+    if (!dateFilterStart || !dateFilterEnd) {
+      if (currentMonth === 11) { currentMonth=0; currentYear++; }
+      else { currentMonth++; }
+    } else {
+      if (!isAfterOrSame(currentMonth, currentYear, maxMonth, maxYear)) {
+        if (currentMonth === 11) { currentMonth=0; currentYear++; }
+        else { currentMonth++; }
+      }
+    }
+    renderCalendar();
+  });
+
+  document.getElementById('apply-date-filter').addEventListener('click', () => {
+    const startVal = document.getElementById('calendar-start').value;
+    const endVal   = document.getElementById('calendar-end').value;
+    if (!startVal || !endVal) {
+      alert("Seleziona entrambe le date (Dal / Al).");
+      return;
+    }
+    const [sy, sm, sd] = startVal.split('-').map(Number);
+    const [ey, em, ed] = endVal.split('-').map(Number);
+    const startDate = new Date(sy, sm-1, sd);
+    const endDate   = new Date(ey, em-1, ed);
+    if (endDate < startDate) {
+      alert("La data finale non può essere precedente a quella iniziale!");
+      return;
+    }
+    dateFilterStart = startVal;
+    dateFilterEnd   = endVal;
+    minMonth = sm-1; minYear = sy;
+    maxMonth = em-1; maxYear = ey;
+    currentMonth = minMonth;
+    currentYear  = sy;
+    renderCalendar();
+  });
+
+  document.getElementById('reset-date-filter').addEventListener('click', () => {
+    dateFilterStart = null;
+    dateFilterEnd   = null;
+    document.getElementById('calendar-start').value = "";
+    document.getElementById('calendar-end').value   = "";
+    currentMonth = new Date().getMonth();
+    currentYear  = new Date().getFullYear();
+    minMonth = 0; minYear = 2025;
+    maxMonth = 11; maxYear = 2025;
+    renderCalendar();
+  });
+
+  function renderCalendar() {
+    const calendarGrid = document.getElementById('calendar-grid');
+    const monthNames = [
+      'Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+      'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'
+    ];
+
+    const headerCells = Array.from(calendarGrid.children).slice(0, 7);
+    calendarGrid.innerHTML = '';
+    headerCells.forEach(cell => calendarGrid.appendChild(cell));
+
+    const prevBtn = document.getElementById('prev-month');
+    const nextBtn = document.getElementById('next-month');
+    prevBtn.classList.remove('hidden-nav');
+    nextBtn.classList.remove('hidden-nav');
+
+    if (dateFilterStart && dateFilterEnd) {
+      const [sty, stm] = dateFilterStart.split('-').map(Number);
+      const [eny, enm] = dateFilterEnd.split('-').map(Number);
+      if (sty===eny && stm===enm) {
+        prevBtn.classList.add('hidden-nav');
+        nextBtn.classList.add('hidden-nav');
+      } else {
+        if (currentMonth=== (stm-1) && currentYear===sty) {
+          prevBtn.classList.add('hidden-nav');
+        }
+        if (currentMonth=== (enm-1) && currentYear===eny) {
+          nextBtn.classList.add('hidden-nav');
+        }
+      }
+    }
+
+    document.getElementById('calendar-title').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
+    let offset = firstDay === 0 ? 6 : firstDay - 1;
+
+    for (let i=0; i<offset; i++){
+      const cell = document.createElement('div');
+      cell.className = "bg-white p-2 min-h-[100px]";
+      calendarGrid.appendChild(cell);
+    }
+
+    for (let day=1; day<=daysInMonth; day++){
+      const cell = document.createElement('div');
+      cell.className = "bg-white p-2 min-h-[100px] space-y-1";
+      cell.innerHTML = `<div class="text-sm font-semibold text-gray-700">${day}</div>`;
+
+      const dt = new Date(currentYear, currentMonth, day);
+      const yyyy= dt.getFullYear();
+      const mm  = (dt.getMonth()+1).toString().padStart(2,'0');
+      const dd  = dt.getDate().toString().padStart(2,'0');
+      const dtStr= `${yyyy}-${mm}-${dd}`;
+
+      if (dateFilterStart && dateFilterEnd) {
+        if (dtStr<dateFilterStart || dtStr>dateFilterEnd) {
+          cell.className = "bg-gray-50 p-2 min-h-[100px] space-y-1 opacity-50";
+        }
+      }
+
+      campaigns.forEach(c => {
+        if (c.start<=dtStr && c.end>=dtStr) {
+          const stripe = document.createElement('div');
+          stripe.className = "text-xs text-white rounded-lg p-1.5 cursor-pointer truncate hover:opacity-90 transition";
+          const colorMap = {
+            Facebook: 'bg-blue-600',
+            Instagram: 'bg-pink-500',
+            TikTok: 'bg-red-500',
+            Linkedin: 'bg-blue-800',
+            Twitter: 'bg-sky-500'
+          };
+          stripe.classList.add(colorMap[c.channel] || 'bg-gray-500');
+
+          // Tooltip
+          const infoTooltip = `Titolo: ${c.title}\n` +
+                              `Canale: ${c.channel}\n` +
+                              `Periodo: ${formatDate(c.start)} - ${formatDate(c.end)}\n` +
+                              `Campo jolly: ${c.type}\n` +
+                              (c.dark ? 'Dark: Sì\n' : '') +
+                              (c.link ? `Link: ${c.link}` : '');
+          stripe.title = infoTooltip;
+          stripe.textContent = c.title;
+          cell.appendChild(stripe);
+        }
+      });
+      calendarGrid.appendChild(cell);
+    }
+  }
+</script>
+</body>
+</html>
